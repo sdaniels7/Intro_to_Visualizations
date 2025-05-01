@@ -1,63 +1,77 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
-  </head>
-  <body>
-    <h1>Healthy Browsing</h1>
-    <h3>Welcome, Samantha</h3>
-    <div id="my_dataviz"></div>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    svg {
+      background: #f5f5f5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Healthy Browsing</h1>
+  <h3>Welcome, Samantha</h3>
+  <svg width="800" height="500"></svg>
 
-    <script>
-      var margin = { top: 10, right: 30, bottom: 30, left: 60 },
-          width = 600 - margin.left - margin.right,
-          height = 400 - margin.top - margin.bottom;
-
-      var svg = d3.select("#my_dataviz")
-        .append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-      d3.csv("FlatFile.csv", d3.autoType).then(function (data) {
+  <script>
+    d3.csv("FlatFile.csv", d3.autoType)
+      .then(function(data) {
         console.log("✅ CSV loaded:", data);
 
-        const grouped = d3.group(data, d => d.name);
+        // Group by domain and count
+        const domainCounts = d3.rollup(
+          data,
+          v => v.length,
+          d => d.domain
+        );
 
-        var x = d3.scaleLinear()
-          .domain(d3.extent(data, d => d.year))
-          .range([0, width]);
-        svg.append("g")
-          .attr("transform", "translate(0," + height + ")")
-          .call(d3.axisBottom(x).ticks(5));
+        // Convert Map to array and sort by count
+        let processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
+          .sort((a, b) => d3.descending(a.count, b.count))
+          .slice(0, 10); // top 10
 
-        var y = d3.scaleLinear()
-          .domain([0, d3.max(data, d => d.n)])
-          .range([height, 0]);
-        svg.append("g")
-          .call(d3.axisLeft(y));
+        const svg = d3.select("svg"),
+              margin = {top: 40, right: 20, bottom: 40, left: 150},
+              width = +svg.attr("width") - margin.left - margin.right,
+              height = +svg.attr("height") - margin.top - margin.bottom;
 
-        var color = d3.scaleOrdinal()
-          .domain(Array.from(grouped.keys()))
-          .range(d3.schemeCategory10);
+        const chart = svg.append("g")
+                         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        svg.selectAll(".line")
-          .data(grouped)
-          .enter()
-          .append("path")
-            .attr("fill", "none")
-            .attr("stroke", d => color(d[0]))
-            .attr("stroke-width", 1.5)
-            .attr("d", d => d3.line()
-              .x(dv => x(dv.year))
-              .y(dv => y(dv.n))
-              (d[1])
-            );
-      }).catch(function (error) {
+        const y = d3.scaleBand()
+                    .domain(processedData.map(d => d.domain))
+                    .range([0, height])
+                    .padding(0.1);
+
+        const x = d3.scaleLinear()
+                    .domain([0, d3.max(processedData, d => d.count)])
+                    .range([0, width]);
+
+        chart.append("g")
+             .call(d3.axisLeft(y));
+
+        chart.append("g")
+             .attr("transform", `translate(0, ${height})`)
+             .call(d3.axisBottom(x).ticks(5));
+
+        chart.selectAll("rect")
+             .data(processedData)
+             .enter()
+             .append("rect")
+             .attr("y", d => y(d.domain))
+             .attr("x", 0)
+             .attr("height", y.bandwidth())
+             .attr("width", d => x(d.count))
+             .attr("fill", "#69b3a2");
+      })
+      .catch(error => {
         console.error("❌ Error loading CSV:", error);
       });
-    </script>
-  </body>
+  </script>
+</body>
 </html>
