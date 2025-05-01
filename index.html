@@ -55,8 +55,7 @@
       <svg id="barChart" width="600" height="400"></svg>
     </div>
     <div class="chart-container">
-      <h3>Filter Donut Chart by Day of Week:</h3>
-      <select id="dayDropdown"></select>
+      <h3>Browsing Activity by Hour (Binned)</h3>
       <svg id="donutChart" width="600" height="400"></svg>
     </div>
     <div class="chart-container">
@@ -102,6 +101,19 @@
 
       svg.append("text")
          .attr("x", +svg.attr("width") / 2)
+         .attr("y", 10)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "18px")
+         .attr("fill", "#333")
+         .text("Top 10 Most Visited Domains");
+
+      svg.append("text")
+         .attr("x", +svg.attr("width") / 2)
+         .attr("y", +svg.attr("height") - 10)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "12px")
+         .attr("fill", "#333")
+         .text("Number of Visits");
          .attr("y", 25)
          .attr("text-anchor", "middle")
          .attr("font-size", "18px")
@@ -157,7 +169,7 @@
         svg.selectAll("*").remove();
 
         const filtered = data.filter(d => d["Day of Week"] === dayFilter);
-        const grouped = d3.rollup(filtered, v => v.length, d => d["Hour (bins)"]);
+        const grouped = d3.rollup(data, v => v.length, d => d["Hour (bins)"]);
         const donutData = Array.from(grouped, ([label, value]) => ({ label, value }));
 
         const width = +svg.attr("width"),
@@ -187,6 +199,18 @@
                        .style("top", (event.pageY - 28) + "px");
              })
              .on("mouseout", function() {
+                tooltip.transition().duration(300).style("opacity", 0);
+             });
+
+        chart.selectAll("text")
+             .data(pie(donutData))
+             .enter()
+             .append("text")
+             .attr("transform", d => `translate(${arc.centroid(d)})`)
+             .attr("text-anchor", "middle")
+             .attr("font-size", "10px")
+             .attr("fill", "#333")
+             .text(d => `${d.data.value} (${((d.data.value / d3.sum(donutData, d => d.value)) * 100).toFixed(1)}%)`);
                 tooltip.transition().duration(300).style("opacity", 0);
              });
       }
