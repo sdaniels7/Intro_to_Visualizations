@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <title>Healthy Browsing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
   <style>
@@ -12,8 +13,9 @@
     }
 
     svg {
-      background-color: #ffffff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background-color: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 40px;
     }
 
     .tooltip {
@@ -26,105 +28,155 @@
       font-size: 12px;
     }
 
-    h1 {
-      margin-bottom: 5px;
-    }
-
-    h3 {
-      margin-top: 0;
-      color: #666;
+    .legend {
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
   <h1>Healthy Browsing</h1>
   <h3>Welcome, Samantha</h3>
-  <svg width="800" height="500"></svg>
+
+  <svg id="barChart" width="800" height="500"></svg>
+  <svg id="donutChart" width="600" height="500"></svg>
   <div class="tooltip" style="opacity: 0;"></div>
 
   <script>
-    d3.csv("FlatFile.csv", d3.autoType)
-      .then(function(data) {
-        const tooltip = d3.select(".tooltip");
+    const tooltip = d3.select(".tooltip");
 
-        const domainCounts = d3.rollup(data, v => v.length, d => d.domain);
-        let processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
-          .sort((a, b) => d3.descending(a.count, b.count))
-          .slice(0, 10);
+    // === BAR CHART ===
+    d3.csv("FlatFile.csv", d3.autoType).then(function(data) {
+      const domainCounts = d3.rollup(data, v => v.length, d => d.domain);
+      let processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
+        .sort((a, b) => d3.descending(a.count, b.count))
+        .slice(0, 10);
 
-        const svg = d3.select("svg"),
-              margin = {top: 60, right: 30, bottom: 60, left: 180},
-              width = +svg.attr("width") - margin.left - margin.right,
-              height = +svg.attr("height") - margin.top - margin.bottom;
+      const svg = d3.select("#barChart"),
+            margin = {top: 60, right: 30, bottom: 60, left: 180},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
 
-        const chart = svg.append("g")
-                         .attr("transform", `translate(${margin.left},${margin.top})`);
+      const chart = svg.append("g")
+                       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        const y = d3.scaleBand()
-                    .domain(processedData.map(d => d.domain))
-                    .range([0, height])
-                    .padding(0.15);
+      const y = d3.scaleBand()
+                  .domain(processedData.map(d => d.domain))
+                  .range([0, height])
+                  .padding(0.15);
 
-        const x = d3.scaleLinear()
-                    .domain([0, d3.max(processedData, d => d.count)])
-                    .range([0, width]);
+      const x = d3.scaleLinear()
+                  .domain([0, d3.max(processedData, d => d.count)])
+                  .range([0, width]);
 
-        // X Axis
-        chart.append("g")
-             .attr("transform", `translate(0, ${height})`)
-             .call(d3.axisBottom(x).ticks(5))
-             .append("text")
-             .attr("x", width / 2)
-             .attr("y", 40)
-             .attr("fill", "#000")
-             .attr("text-anchor", "middle")
-             .text("Number of Visits");
+      chart.append("g")
+           .attr("transform", `translate(0, ${height})`)
+           .call(d3.axisBottom(x).ticks(5));
 
-        // Y Axis
-        chart.append("g")
-             .call(d3.axisLeft(y))
-             .append("text")
-             .attr("transform", "rotate(-90)")
-             .attr("x", -height / 2)
-             .attr("y", -140)
-             .attr("fill", "#000")
-             .attr("text-anchor", "middle")
-             .text("Top Domains");
+      chart.append("g").call(d3.axisLeft(y));
 
-        // Chart Title
-        svg.append("text")
-           .attr("x", svg.attr("width") / 2)
-           .attr("y", 30)
-           .attr("text-anchor", "middle")
-           .attr("font-size", "20px")
-           .attr("fill", "#333")
-           .text("Top 10 Most Visited Domains");
+      svg.append("text")
+         .attr("x", svg.attr("width") / 2)
+         .attr("y", 30)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "20px")
+         .attr("fill", "#333")
+         .text("Top 10 Most Visited Domains");
 
-        // Bars
-        chart.selectAll("rect")
-             .data(processedData)
-             .enter()
-             .append("rect")
-             .attr("y", d => y(d.domain))
-             .attr("x", 0)
-             .attr("height", y.bandwidth())
-             .attr("width", d => x(d.count))
-             .attr("fill", "#69b3a2")
-             .on("mouseover", function(event, d) {
-                tooltip.transition().duration(200).style("opacity", 1);
-                tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
-                       .style("left", (event.pageX + 10) + "px")
-                       .style("top", (event.pageY - 28) + "px");
-                d3.select(this).attr("fill", "#4c837a");
-             })
-             .on("mouseout", function() {
-                tooltip.transition().duration(300).style("opacity", 0);
-                d3.select(this).attr("fill", "#69b3a2");
-             });
-      })
-      .catch(error => {
-        console.error("❌ Error loading CSV:", error);
+      chart.selectAll("rect")
+           .data(processedData)
+           .enter()
+           .append("rect")
+           .attr("y", d => y(d.domain))
+           .attr("x", 0)
+           .attr("height", y.bandwidth())
+           .attr("width", 0) // start at 0 width
+           .attr("fill", "#69b3a2")
+           .on("mouseover", function(event, d) {
+              tooltip.transition().duration(200).style("opacity", 1);
+              tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
+                     .style("left", (event.pageX + 10) + "px")
+                     .style("top", (event.pageY - 28) + "px");
+              d3.select(this).attr("fill", "#4c837a");
+           })
+           .on("mouseout", function() {
+              tooltip.transition().duration(300).style("opacity", 0);
+              d3.select(this).attr("fill", "#69b3a2");
+           })
+           .transition()
+           .duration(1000)
+           .attr("width", d => x(d.count));
+    });
+
+    // === DONUT CHART ===
+    d3.csv("AggregatedDataset.csv", d3.autoType).then(function(data) {
+      const bins = d3.rollup(data, v => v.length, d => d["Hour (bins)"]);
+      const donutData = Array.from(bins, ([key, value]) => ({ label: key, value }));
+
+      const svg = d3.select("#donutChart"),
+            width = +svg.attr("width"),
+            height = +svg.attr("height"),
+            radius = Math.min(width, height) / 2 - 50;
+
+      const chart = svg.append("g")
+                       .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+      const color = d3.scaleOrdinal()
+                      .domain(donutData.map(d => d.label))
+                      .range(d3.schemeSet2);
+
+      const pie = d3.pie()
+                    .value(d => d.value)
+                    .sort(null);
+
+      const arc = d3.arc()
+                    .innerRadius(radius * 0.5)
+                    .outerRadius(radius);
+
+      const arcs = chart.selectAll("path")
+                        .data(pie(donutData))
+                        .enter()
+                        .append("path")
+                        .attr("d", arc)
+                        .attr("fill", d => color(d.data.label))
+                        .on("mouseover", function(event, d) {
+                          tooltip.transition().duration(200).style("opacity", 1);
+                          tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} entries`)
+                                 .style("left", (event.pageX + 10) + "px")
+                                 .style("top", (event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function() {
+                          tooltip.transition().duration(300).style("opacity", 0);
+                        });
+
+      // Legend
+      const legend = svg.append("g")
+                        .attr("transform", `translate(${width - 150}, ${height / 4})`)
+                        .attr("class", "legend");
+
+      donutData.forEach((d, i) => {
+        const group = legend.append("g")
+                            .attr("transform", `translate(0, ${i * 20})`);
+
+        group.append("rect")
+             .attr("width", 14)
+             .attr("height", 14)
+             .attr("fill", color(d.label));
+
+        group.append("text")
+             .attr("x", 20)
+             .attr("y", 12)
+             .text(d.label);
       });
+
+      // Donut Title
+      svg.append("text")
+         .attr("x", width / 2)
+         .attr("y", 30)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "20px")
+         .attr("fill", "#333")
+         .text("Browsing Activity by Hour (Binned)");
+    });
   </script>
 </body>
 </html>
