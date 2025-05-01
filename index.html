@@ -213,7 +213,8 @@
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     d3.csv("chart2.csv", function(d) {
-      return { date: d3.timeParse("%m/%d/%Y")(d.date), value: +d.value };
+      return {date: d3.timeParse("%m/%d/%Y")(d.date), value: +d.value 
+             "All Websites",value:+d.value};
     }).then(function(data) {
       const x = d3.scaleTime()
                   .domain(d3.extent(data, d => d.date))
