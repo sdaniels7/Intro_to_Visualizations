@@ -1,3 +1,5 @@
+Can you fix this code?
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -84,7 +86,7 @@
             height = +svg.attr("height") - margin.top - margin.bottom;
 
       const chart = svg.append("g")
-                       .attr("transform", `translate(${margin.left},${margin.top})`);
+                       .attr("transform", translate(${margin.left},${margin.top}));
 
       const y = d3.scaleBand()
                   .domain(processedData.map(d => d.domain))
@@ -95,7 +97,7 @@
                   .domain([0, d3.max(processedData, d => d.count)])
                   .range([0, width]);
 
-      chart.append("g").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x));
+      chart.append("g").attr("transform", translate(0, ${height})).call(d3.axisBottom(x));
       chart.append("g").call(d3.axisLeft(y));
 
       chart.selectAll("rect")
@@ -109,7 +111,7 @@
            .attr("fill", "#69b3a2")
            .on("mouseover", function(event, d) {
               tooltip.transition().duration(200).style("opacity", 1);
-              tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
+              tooltip.html(<strong>${d.domain}</strong><br>${d.count} visits)
                      .style("left", (event.pageX + 10) + "px")
                      .style("top", (event.pageY - 28) + "px");
               d3.select(this).attr("fill", "#4c837a");
@@ -156,7 +158,7 @@
             radius = Math.min(width, height) / 2 - 50;
 
       const chart = svg.append("g")
-                       .attr("transform", `translate(${width / 2}, ${height / 2})`);
+                       .attr("transform", translate(${width / 2}, ${height / 2}));
 
       const color = d3.scaleOrdinal()
                       .domain(donutData.map(d => d.label))
@@ -173,7 +175,7 @@
            .each(function(d) { this._current = d; })
            .on("mouseover", function(event, d) {
               tooltip.transition().duration(200).style("opacity", 1);
-              tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
+              tooltip.html(<strong>${d.data.label}</strong><br>${d.data.value} visits)
                      .style("left", (event.pageX + 10) + "px")
                      .style("top", (event.pageY - 28) + "px");
            })
@@ -203,7 +205,7 @@
             height = +svg.attr("height") - margin.top - margin.bottom;
 
       const chart = svg.append("g")
-                       .attr("transform", `translate(${margin.left},${margin.top})`);
+                       .attr("transform", translate(${margin.left},${margin.top}));
 
       const x = d3.scalePoint()
                   .domain(orderedData.map(d => d.day))
@@ -215,7 +217,7 @@
                   .range([height, 0]);
 
       chart.append("g")
-           .attr("transform", `translate(0, ${height})`)
+           .attr("transform", translate(0, ${height}))
            .call(d3.axisBottom(x));
 
       chart.append("g").call(d3.axisLeft(y));
