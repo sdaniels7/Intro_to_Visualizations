@@ -48,6 +48,7 @@
 <body>
   <h1>Healthy Browsing</h1>
   <p>Your browser history can tell stories about your mental health, from an increase in overall usage, frequency of certain sites, and keywords presented on the site. Explore the visuals below about your internet history.</p>
+  
   <div class="grid-container">
     <div class="chart-container">
       <svg id="barChart" width="600" height="400"></svg>
@@ -73,6 +74,7 @@
     const tooltip = d3.select(".tooltip");
 
     // Bar Chart
+    const barSvg = d3.select("#barChart");
     d3.csv("chart1.csv", d3.autoType).then(function(data) {
       const validData = data.filter(d => d.domain && d.domain !== "");
       const domainCounts = d3.rollup(validData, v => v.length, d => d.domain);
@@ -80,12 +82,11 @@
         .sort((a, b) => d3.descending(a.count, b.count))
         .slice(0, 10);
 
-      const svg = d3.select("#barChart"),
-            margin = {top: 40, right: 20, bottom: 60, left: 180},
-            width = +svg.attr("width") - margin.left - margin.right,
-            height = +svg.attr("height") - margin.top - margin.bottom;
+      const margin = {top: 40, right: 20, bottom: 60, left: 180},
+            width = +barSvg.attr("width") - margin.left - margin.right,
+            height = +barSvg.attr("height") - margin.top - margin.bottom;
 
-      const chart = svg.append("g")
+      const chart = barSvg.append("g")
                        .attr("transform", `translate(${margin.left},${margin.top})`);
 
       const y = d3.scaleBand()
@@ -100,8 +101,8 @@
       chart.append("g").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x));
       chart.append("g").call(d3.axisLeft(y));
 
-      svg.append("text")
-         .attr("x", +svg.attr("width") / 2)
+      barSvg.append("text")
+         .attr("x", +barSvg.attr("width") / 2)
          .attr("y", 25)
          .attr("text-anchor", "middle")
          .attr("font-size", "18px")
@@ -119,7 +120,9 @@
            .attr("fill", "#69b3a2")
            .transition()
            .duration(1000)
-           .attr("width", d => x(d.count))
+           .attr("width", d => x(d.count));
+
+      chart.selectAll("rect")
            .on("mouseover", function(event, d) {
               tooltip.transition().duration(200).style("opacity", 1);
               tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
@@ -134,18 +137,19 @@
     });
 
     // Donut Chart
+    const donutSvg = d3.select("#donutChart");
     d3.csv("FinalAggregatedDataset.csv", d3.autoType).then(function(data) {
       const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
       const dropdown = d3.select("#dayDropdown");
-      
-      svg.append("text")
-         .attr("x", +svg.attr("width") / 2)
+
+      donutSvg.append("text")
+         .attr("x", +donutSvg.attr("width") / 2)
          .attr("y", 25)
          .attr("text-anchor", "middle")
          .attr("font-size", "18px")
          .attr("fill", "#333")
-         .text("Internet traffic by keywords ");
-      
+         .text("Internet Traffic by Keywords");
+
       dropdown.selectAll("option")
               .data(allDays)
               .enter()
@@ -161,19 +165,18 @@
       });
 
       function drawDonut(data, dayFilter) {
-        const svg = d3.select("#donutChart");
-        svg.selectAll("*").remove();
+        donutSvg.selectAll("*").remove();
 
         const filtered = data.filter(d => d["Day of Week"] === dayFilter);
         const grouped = d3.rollup(filtered, v => v.length, d => d["Hour (bins)"]);
         const donutData = Array.from(grouped, ([label, value]) => ({ label, value }));
 
-        const width = +svg.attr("width"),
-              height = +svg.attr("height"),
+        const width = +donutSvg.attr("width"),
+              height = +donutSvg.attr("height"),
               radius = Math.min(width, height) / 2 - 50;
 
-        const chart = svg.append("g")
-                         .attr("transform", `translate(${width / 2}, ${height / 2 - 50})`);
+        const chart = donutSvg.append("g")
+                              .attr("transform", `translate(${width / 2}, ${height / 2})`);
 
         const color = d3.scaleOrdinal()
                         .domain(donutData.map(d => d.label))
@@ -201,78 +204,39 @@
     });
 
     // Line Chart
-               // set the dimensions and margins of the graph
-            var margin = {top: 10, right: 30, bottom: 30, left: 60},
-                width = 460 - margin.left - margin.right,
-                height = 400 - margin.top - margin.bottom;
-            
-            // append the svg object to the body of the page
-            var svg = d3.select("#chart2")
-              .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-              .append("g")
-                .attr("transform",
-                      "translate(" + margin.left + "," + margin.top + ")");
-            
-            //Read the data
-            d3.csv("chart2.csv",
-            
-              // When reading the csv, I must format variables:
-              function(d){
-                return { date : d3.timeParse("%Y-%m-%d")(d.date), value : d.value }
-              },
-            
-              // Now I can use this dataset:
-              function(data) {
-            
-                // Add X axis --> it is a date format
-                var x = d3.scaleTime()
-                  .domain(d3.extent(data, function(d) { return d.date; }))
-                  .range([ 0, width ]);
-                svg.append("g")
-                  .attr("transform", "translate(0," + height + ")")
-                  .call(d3.axisBottom(x));
-            
-                // Max value observed:
-                const max = d3.max(data, function(d) { return +d.value; })
-            
-                // Add Y axis
-                var y = d3.scaleLinear()
-                  .domain([0, max])
-                  .range([ height, 0 ]);
-                svg.append("g")
-                  .call(d3.axisLeft(y));
-            
-                // Set the gradient
-                svg.append("linearGradient")
-                  .attr("id", "line-gradient")
-                  .attr("gradientUnits", "userSpaceOnUse")
-                  .attr("x1", 0)
-                  .attr("y1", y(0))
-                  .attr("x2", 0)
-                  .attr("y2", y(max))
-                  .selectAll("stop")
-                    .data([
-                      {offset: "0%", color: "blue"},
-                      {offset: "100%", color: "red"}
-                    ])
-                  .enter().append("stop")
-                    .attr("offset", function(d) { return d.offset; })
-                    .attr("stop-color", function(d) { return d.color; });
-            
-                // Add the line
-                svg.append("path")
-                  .datum(data)
-                  .attr("fill", "none")
-                  .attr("stroke", "url(#line-gradient)" )
-                  .attr("stroke-width", 2)
-                  .attr("d", d3.line()
-                    .x(function(d) { return x(d.date) })
-                    .y(function(d) { return y(d.value) })
-                    )
+    const lineSvg = d3.select("#chart2");
+    const margin = {top: 10, right: 30, bottom: 30, left: 60},
+          width = +lineSvg.attr("width") - margin.left - margin.right,
+          height = +lineSvg.attr("height") - margin.top - margin.bottom;
 
-})
+    const chartGroup = lineSvg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    d3.csv("chart2.csv", function(d) {
+      return { date: d3.timeParse("%Y-%m-%d")(d.date), value: +d.value };
+    }).then(function(data) {
+      const x = d3.scaleTime()
+                  .domain(d3.extent(data, d => d.date))
+                  .range([0, width]);
+
+      const y = d3.scaleLinear()
+                  .domain([0, d3.max(data, d => d.value)])
+                  .range([height, 0]);
+
+      chartGroup.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x));
+
+      chartGroup.append("g").call(d3.axisLeft(y));
+
+      chartGroup.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 2)
+                .attr("d", d3.line()
+                  .x(d => x(d.date))
+                  .y(d => y(d.value)));
     });
   </script>
 </body>
