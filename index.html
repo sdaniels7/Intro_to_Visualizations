@@ -40,12 +40,25 @@
   </style>
 </head>
 <body>
-  <h1>Healthy Browsing</h1>
-  <h3>Welcome, Samantha</h3>
 
+    <!-- Intro Section -->
+  <section id="intro">
+    <h1>Healthy Browsing</h1>
+    <p>Welcome, Samantha</p>
+  </section>
+
+  <!-- Donut Chart Section -->
+  <section id="donut-chart">
+    <h2>Browsing Activity by Hour</h2>
+    <svg width="600" height="500"></svg>
+  </section>
+  <!-- Scripts -->
+  <script src="donut_chart.js"></script>
+
+  <section id = "bar-chart">
+  <h3>Filter Donut Chart by Day of Week:</h3>
   <svg id="barChart" width="800" height="500"></svg>
 
-  <h3>Filter Donut Chart by Day of Week:</h3>
   <select id="dayDropdown"></select>
   <svg id="donutChart" width="600" height="500"></svg>
   <div class="tooltip" style="opacity: 0;"></div>
