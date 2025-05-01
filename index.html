@@ -71,7 +71,7 @@
     const tooltip = d3.select(".tooltip");
 
     // Bar Chart
-    d3.csv("FlatFile.csv", d3.autoType).then(function(data) {
+    d3.csv("chart1.csv", d3.autoType).then(function(data) {
       const validData = data.filter(d => d.domain && d.domain !== "");
       const domainCounts = d3.rollup(validData, v => v.length, d => d.domain);
       const processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
