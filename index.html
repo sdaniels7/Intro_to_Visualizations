@@ -11,13 +11,11 @@
       background: #fafafa;
       margin: 40px;
     }
-
     svg {
       background-color: #fff;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
       margin-bottom: 40px;
     }
-
     .tooltip {
       position: absolute;
       background-color: rgba(0, 0, 0, 0.75);
@@ -27,11 +25,9 @@
       pointer-events: none;
       font-size: 12px;
     }
-
     .legend {
       font-size: 12px;
     }
-
     select {
       font-size: 14px;
       padding: 6px;
@@ -40,28 +36,20 @@
   </style>
 </head>
 <body>
+  <h1>Healthy Browsing</h1>
+  <h3>Welcome, Samantha</h3>
 
-  <!-- Intro Section -->
-  <section id="intro">
-    <h1>Healthy Browsing</h1>
-    <p>Welcome, Samantha</p>
-  </section>
-
-  <!-- Donut Filter Section -->
-  <section id="donut-filter">
-    <h3>Filter Donut Chart by Day of Week:</h3>
-    <select id="dayDropdown"></select>
-  </section>
-
-  <!-- Charts -->
   <svg id="barChart" width="800" height="500"></svg>
+  <h3>Filter Donut Chart by Day of Week:</h3>
+  <select id="dayDropdown"></select>
   <svg id="donutChart" width="600" height="500"></svg>
+  <svg id="lineChart" width="800" height="500"></svg>
   <div class="tooltip" style="opacity: 0;"></div>
 
   <script>
     const tooltip = d3.select(".tooltip");
 
-    // === BAR CHART ===
+    // Bar Chart
     d3.csv("FlatFile.csv", d3.autoType).then(function(data) {
       const domainCounts = d3.rollup(data, v => v.length, d => d.domain);
       const processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
@@ -121,7 +109,7 @@
            .attr("width", d => x(d.count));
     });
 
-    // === DONUT CHART WITH ANIMATION ===
+    // Donut Chart
     d3.csv("FinalAggregatedDataset.csv", d3.autoType).then(function(data) {
       const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
       const dropdown = d3.select("#dayDropdown");
@@ -163,30 +151,28 @@
       const pie = d3.pie().value(d => d.value).sort(null);
       const arc = d3.arc().innerRadius(radius * 0.5).outerRadius(radius);
 
-      const path = chart.selectAll("path")
-                        .data(pie(donutData), d => d.data.label);
-
-      const entering = path.enter()
-        .append("path")
-        .attr("fill", d => color(d.data.label))
-        .each(function(d) { this._current = d; })
-        .on("mouseover", function(event, d) {
-          tooltip.transition().duration(200).style("opacity", 1);
-          tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
-                 .style("left", (event.pageX + 10) + "px")
-                 .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", function() {
-          tooltip.transition().duration(300).style("opacity", 0);
-        });
-
-      entering.transition()
-        .duration(1000)
-        .attrTween("d", function(d) {
-          const interpolate = d3.interpolate(this._current, d);
-          this._current = interpolate(1);
-          return t => arc(interpolate(t));
-        });
+      chart.selectAll("path")
+           .data(pie(donutData))
+           .enter()
+           .append("path")
+           .attr("fill", d => color(d.data.label))
+           .each(function(d) { this._current = d; })
+           .on("mouseover", function(event, d) {
+              tooltip.transition().duration(200).style("opacity", 1);
+              tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
+                     .style("left", (event.pageX + 10) + "px")
+                     .style("top", (event.pageY - 28) + "px");
+           })
+           .on("mouseout", function() {
+              tooltip.transition().duration(300).style("opacity", 0);
+           })
+           .transition()
+           .duration(1000)
+           .attrTween("d", function(d) {
+              const interpolate = d3.interpolate(this._current, d);
+              this._current = interpolate(1);
+              return t => arc(interpolate(t));
+           });
 
       svg.append("text")
          .attr("x", width / 2)
@@ -195,6 +181,74 @@
          .attr("font-size", "18px")
          .text(`Browsing Activity by Hour — ${dayFilter}`);
     }
+
+    // Line Chart (Visits by Day)
+    d3.csv("FlatFile.csv", d3.autoType).then(data => {
+      const dayCounts = d3.rollup(data, v => v.length, d => d.Day);
+      const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      const orderedData = dayOrder
+        .filter(day => dayCounts.has(day))
+        .map(day => ({ day, count: dayCounts.get(day) }));
+
+      const svg = d3.select("#lineChart"),
+            margin = { top: 50, right: 40, bottom: 50, left: 60 },
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
+
+      const chart = svg.append("g")
+                       .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scalePoint()
+                  .domain(orderedData.map(d => d.day))
+                  .range([0, width])
+                  .padding(0.5);
+
+      const y = d3.scaleLinear()
+                  .domain([0, d3.max(orderedData, d => d.count)]).nice()
+                  .range([height, 0]);
+
+      chart.append("g")
+           .attr("transform", `translate(0, ${height})`)
+           .call(d3.axisBottom(x));
+
+      chart.append("g").call(d3.axisLeft(y));
+
+      const line = d3.line()
+                     .x(d => x(d.day))
+                     .y(d => y(d.count));
+
+      chart.append("path")
+           .datum(orderedData)
+           .attr("class", "line")
+           .attr("fill", "none")
+           .attr("stroke", "steelblue")
+           .attr("stroke-width", 2)
+           .attr("d", line);
+
+      chart.selectAll("circle")
+           .data(orderedData)
+           .enter()
+           .append("circle")
+           .attr("cx", d => x(d.day))
+           .attr("cy", d => y(d.count))
+           .attr("r", 4)
+           .attr("fill", "steelblue");
+
+      svg.append("text")
+         .attr("x", width / 2 + margin.left)
+         .attr("y", margin.top + height + 40)
+         .attr("text-anchor", "middle")
+         .attr("class", "axis-label")
+         .text("Day of the Week");
+
+      svg.append("text")
+         .attr("x", -(margin.top + height / 2))
+         .attr("y", 20)
+         .attr("transform", "rotate(-90)")
+         .attr("text-anchor", "middle")
+         .attr("class", "axis-label")
+         .text("Number of Visits");
+    });
   </script>
 </body>
 </html>
