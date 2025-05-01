@@ -6,10 +6,33 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background: #fafafa;
+      margin: 40px;
     }
+
     svg {
-      background: #f5f5f5;
+      background-color: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .tooltip {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      pointer-events: none;
+      font-size: 12px;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    h3 {
+      margin-top: 0;
+      color: #666;
     }
   </style>
 </head>
@@ -17,26 +40,20 @@
   <h1>Healthy Browsing</h1>
   <h3>Welcome, Samantha</h3>
   <svg width="800" height="500"></svg>
+  <div class="tooltip" style="opacity: 0;"></div>
 
   <script>
     d3.csv("FlatFile.csv", d3.autoType)
       .then(function(data) {
-        console.log("✅ CSV loaded:", data);
+        const tooltip = d3.select(".tooltip");
 
-        // Group by domain and count
-        const domainCounts = d3.rollup(
-          data,
-          v => v.length,
-          d => d.domain
-        );
-
-        // Convert Map to array and sort by count
+        const domainCounts = d3.rollup(data, v => v.length, d => d.domain);
         let processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
           .sort((a, b) => d3.descending(a.count, b.count))
-          .slice(0, 10); // top 10
+          .slice(0, 10);
 
         const svg = d3.select("svg"),
-              margin = {top: 40, right: 20, bottom: 40, left: 150},
+              margin = {top: 60, right: 30, bottom: 60, left: 180},
               width = +svg.attr("width") - margin.left - margin.right,
               height = +svg.attr("height") - margin.top - margin.bottom;
 
@@ -46,19 +63,44 @@
         const y = d3.scaleBand()
                     .domain(processedData.map(d => d.domain))
                     .range([0, height])
-                    .padding(0.1);
+                    .padding(0.15);
 
         const x = d3.scaleLinear()
                     .domain([0, d3.max(processedData, d => d.count)])
                     .range([0, width]);
 
-        chart.append("g")
-             .call(d3.axisLeft(y));
-
+        // X Axis
         chart.append("g")
              .attr("transform", `translate(0, ${height})`)
-             .call(d3.axisBottom(x).ticks(5));
+             .call(d3.axisBottom(x).ticks(5))
+             .append("text")
+             .attr("x", width / 2)
+             .attr("y", 40)
+             .attr("fill", "#000")
+             .attr("text-anchor", "middle")
+             .text("Number of Visits");
 
+        // Y Axis
+        chart.append("g")
+             .call(d3.axisLeft(y))
+             .append("text")
+             .attr("transform", "rotate(-90)")
+             .attr("x", -height / 2)
+             .attr("y", -140)
+             .attr("fill", "#000")
+             .attr("text-anchor", "middle")
+             .text("Top Domains");
+
+        // Chart Title
+        svg.append("text")
+           .attr("x", svg.attr("width") / 2)
+           .attr("y", 30)
+           .attr("text-anchor", "middle")
+           .attr("font-size", "20px")
+           .attr("fill", "#333")
+           .text("Top 10 Most Visited Domains");
+
+        // Bars
         chart.selectAll("rect")
              .data(processedData)
              .enter()
@@ -67,7 +109,18 @@
              .attr("x", 0)
              .attr("height", y.bandwidth())
              .attr("width", d => x(d.count))
-             .attr("fill", "#69b3a2");
+             .attr("fill", "#69b3a2")
+             .on("mouseover", function(event, d) {
+                tooltip.transition().duration(200).style("opacity", 1);
+                tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
+                       .style("left", (event.pageX + 10) + "px")
+                       .style("top", (event.pageY - 28) + "px");
+                d3.select(this).attr("fill", "#4c837a");
+             })
+             .on("mouseout", function() {
+                tooltip.transition().duration(300).style("opacity", 0);
+                d3.select(this).attr("fill", "#69b3a2");
+             });
       })
       .catch(error => {
         console.error("❌ Error loading CSV:", error);
