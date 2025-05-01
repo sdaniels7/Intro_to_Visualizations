@@ -191,7 +191,7 @@
     });
 
     // Line Chart
-    d3.csv("FlatFile.csv", d3.autoType).then(data => {
+    d3.csv("chart2.csv", d3.autoType).then(data => {
       const dayCounts = d3.rollup(data, v => v.length, d => d.Day);
       const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
       const orderedData = dayOrder
