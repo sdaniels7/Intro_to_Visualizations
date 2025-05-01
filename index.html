@@ -135,7 +135,15 @@
     d3.csv("FinalAggregatedDataset.csv", d3.autoType).then(function(data) {
       const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
       const dropdown = d3.select("#dayDropdown");
-
+      
+      svg.append("text")
+         .attr("x", +svg.attr("width") / 2)
+         .attr("y", 25)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "18px")
+         .attr("fill", "#333")
+         .text("Internet traffic by keywords ");
+      
       dropdown.selectAll("option")
               .data(allDays)
               .enter()
