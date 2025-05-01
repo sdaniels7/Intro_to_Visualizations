@@ -40,13 +40,21 @@
   </style>
 </head>
 <body>
-  <h1>Healthy Browsing</h1>
-  <h3>Welcome, Samantha</h3>
 
+  <!-- Intro Section -->
+  <section id="intro">
+    <h1>Healthy Browsing</h1>
+    <p>Welcome, Samantha</p>
+  </section>
+
+  <!-- Donut Filter Section -->
+  <section id="donut-filter">
+    <h3>Filter Donut Chart by Day of Week:</h3>
+    <select id="dayDropdown"></select>
+  </section>
+
+  <!-- Charts -->
   <svg id="barChart" width="800" height="500"></svg>
-
-  <h3>Filter Donut Chart by Day of Week:</h3>
-  <select id="dayDropdown"></select>
   <svg id="donutChart" width="600" height="500"></svg>
   <div class="tooltip" style="opacity: 0;"></div>
 
@@ -56,7 +64,7 @@
     // === BAR CHART ===
     d3.csv("FlatFile.csv", d3.autoType).then(function(data) {
       const domainCounts = d3.rollup(data, v => v.length, d => d.domain);
-      let processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
+      const processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
         .sort((a, b) => d3.descending(a.count, b.count))
         .slice(0, 10);
 
@@ -113,8 +121,8 @@
            .attr("width", d => x(d.count));
     });
 
-    // === DONUT CHART WITH DROPDOWN + ANIMATION ===
-    d3.csv("FinalAggregatedDataset.csv", d3.autoType).then(function(data) {
+    // === DONUT CHART WITH ANIMATION ===
+    d3.csv("AggregatedDataset.csv", d3.autoType).then(function(data) {
       const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
       const dropdown = d3.select("#dayDropdown");
 
@@ -135,7 +143,7 @@
 
     function drawDonut(data, dayFilter) {
       const svg = d3.select("#donutChart");
-      svg.selectAll("*").remove(); // clear previous chart
+      svg.selectAll("*").remove();
 
       const filtered = data.filter(d => d["Day of Week"] === dayFilter);
       const grouped = d3.rollup(filtered, v => v.length, d => d["Hour (bins)"]);
@@ -156,46 +164,36 @@
       const arc = d3.arc().innerRadius(radius * 0.5).outerRadius(radius);
 
       const path = chart.selectAll("path")
-                        .data(pie(donutData));
+                        .data(pie(donutData), d => d.data.label);
 
-      path.enter()
-          .append("path")
-          .attr("fill", d => color(d.data.label))
-          .each(function(d) { this._current = d; }) // store initial state
-          .on("mouseover", function(event, d) {
-            tooltip.transition().duration(200).style("opacity", 1);
-            tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
-                   .style("left", (event.pageX + 10) + "px")
-                   .style("top", (event.pageY - 28) + "px");
-          })
-          .on("mouseout", function() {
-            tooltip.transition().duration(300).style("opacity", 0);
-          })
-          .transition()
-          .duration(1000)
-          .attrTween("d", function(d) {
-            const interpolate = d3.interpolate(this._current, d);
-            this._current = interpolate(1);
-            return t => arc(interpolate(t));
-          });
+      const entering = path.enter()
+        .append("path")
+        .attr("fill", d => color(d.data.label))
+        .each(function(d) { this._current = d; })
+        .on("mouseover", function(event, d) {
+          tooltip.transition().duration(200).style("opacity", 1);
+          tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
+                 .style("left", (event.pageX + 10) + "px")
+                 .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.transition().duration(300).style("opacity", 0);
+        });
 
-      // Add chart title
+      entering.transition()
+        .duration(1000)
+        .attrTween("d", function(d) {
+          const interpolate = d3.interpolate(this._current, d);
+          this._current = interpolate(1);
+          return t => arc(interpolate(t));
+        });
+
       svg.append("text")
          .attr("x", width / 2)
          .attr("y", 30)
          .attr("text-anchor", "middle")
          .attr("font-size", "18px")
          .text(`Browsing Activity by Hour — ${dayFilter}`);
-
-      // Add legend
-      const legend = svg.append("g")
-                        .attr("transform", `translate(${width - 150}, ${height / 4})`);
-
-      donutData.forEach((d, i) => {
-        const group = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
-        group.append("rect").attr("width", 14).attr("height", 14).attr("fill", color(d.label));
-        group.append("text").attr("x", 20).attr("y", 12).text(d.label);
-      });
     }
   </script>
 </body>
