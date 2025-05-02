@@ -219,31 +219,73 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
 });
 
 
-    // ------------------- LINE CHART -------------------
-    d3.csv("chart2.csv", d3.autoType).then(data => {
-      const svg = d3.select("#lineChart"),
-            margin = {top: 10, right: 30, bottom: 30, left: 60},
-            width = +svg.attr("width") - margin.left - margin.right,
-            height = +svg.attr("height") - margin.top - margin.bottom;
+    // ------------------- FIXED LINE CHART -------------------
+d3.csv("chart2.csv", d3.autoType).then(data => {
+  const svg = d3.select("#lineChart"),
+        margin = {top: 10, right: 30, bottom: 30, left: 60},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
 
-      const parseDate = d3.timeParse("%m/%d/%Y");
-      const counts = d3.rollup(data, v => v.length, d => parseDate(d.date));
-      const lineData = Array.from(counts, ([date, value]) => ({ date, value })).sort((a, b) => a.date - b.date);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-      const x = d3.scaleTime().domain(d3.extent(lineData, d => d.date)).range([0, width]);
-      const y = d3.scaleLinear().domain([0, d3.max(lineData, d => d.value)]).range([height, 0]);
+  const parseDate = d3.timeParse("%m/%d/%Y");
+  data.forEach(d => {
+    d.date = parseDate(d.date);
+  });
 
-      const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-      g.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
-      g.append("g").call(d3.axisLeft(y));
+  // Extract and prepare data for the line: [{date, value}]
+  const lineData = data
+    .filter(d => d["All Websites"] != null)
+    .map(d => ({
+      date: d.date,
+      value: +d["All Websites"]
+    }));
 
-      g.append("path")
-        .datum(lineData)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 2)
-        .attr("d", d3.line().x(d => x(d.date)).y(d => y(d.value)));
-    });
+  // Scales
+  const x = d3.scaleTime()
+              .domain(d3.extent(lineData, d => d.date))
+              .range([0, width]);
+
+  const y = d3.scaleLinear()
+              .domain([0, d3.max(lineData, d => d.value)])
+              .nice()
+              .range([height, 0]);
+
+  // Axes
+  g.append("g")
+   .attr("transform", `translate(0,${height})`)
+   .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")));
+
+  g.append("g")
+   .call(d3.axisLeft(y));
+
+  // Line path
+  g.append("path")
+    .datum(lineData)
+    .attr("fill", "none")
+    .attr("stroke", "steelblue")
+    .attr("stroke-width", 2)
+    .attr("d", d3.line()
+      .x(d => x(d.date))
+      .y(d => y(d.value)));
+
+  // Optional: dots + tooltip
+  g.selectAll("circle")
+    .data(lineData)
+    .enter()
+    .append("circle")
+    .attr("cx", d => x(d.date))
+    .attr("cy", d => y(d.value))
+    .attr("r", 4)
+    .attr("fill", "steelblue")
+    .on("mouseover", function(event, d) {
+      tooltip.transition().style("opacity", 1);
+      tooltip.html(`${d3.timeFormat("%b %d, %Y")(d.date)}<br>Visits: ${d.value}`)
+             .style("left", (event.pageX + 10) + "px")
+             .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", () => tooltip.transition().style("opacity", 0));
+});
 
     // ------------------- BUBBLE CHART -----------------
 d3.csv("chart4.csv", d3.autoType).then(data => {
