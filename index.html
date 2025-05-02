@@ -44,8 +44,8 @@
 </head>
 <body>
   <h1>Healthy Browsing</h1>
-  <p>Your browser history can tell stories about your mental health, from an increase in overall usage, frequency of certain sites, and keywords presented on the site. Explore the visuals below about your internet history.</p>
-  
+  <p>Your browser history can tell stories about your mental health...</p>
+
   <div class="grid-container">
     <div class="chart-container">
       <svg id="barChart" width="600" height="400"></svg>
@@ -57,11 +57,11 @@
       <svg id="donutChart" width="600" height="400"></svg>
     </div>
     <div class="chart-container">
-      <p>Internet Browsing over Time</p>
+      <h3>Website Visits Over Time</h3>
       <svg id="lineChart" width="600" height="400"></svg>
     </div>
     <div class="chart-container">
-      <p style="text-align:center; padding-top: 180px; color: #aaa;">Bubble Chart</p>
+      <h3>Bubble Chart</h3>
       <svg id="bubbleChart" width="600" height="400"></svg>
     </div>
   </div>
@@ -72,142 +72,142 @@
     const tooltip = d3.select(".tooltip");
 
     // Bar Chart
-    const barSvg = d3.select("#barChart");
-    d3.csv("chart1.csv", d3.autoType).then(function(data) {
-      const validData = data.filter(d => d.domain && d.domain !== "");
-      const domainCounts = d3.rollup(validData, v => v.length, d => d.domain);
-      const processedData = Array.from(domainCounts, ([domain, count]) => ({ domain, count }))
+    d3.csv("chart1.csv", d3.autoType).then(data => {
+      const svg = d3.select("#barChart"),
+            margin = {top: 40, right: 20, bottom: 60, left: 180},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
+
+      const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+      const counts = d3.rollup(data, v => v.length, d => d.domain);
+      const sorted = Array.from(counts, ([domain, count]) => ({ domain, count }))
         .sort((a, b) => d3.descending(a.count, b.count))
         .slice(0, 10);
 
-      const margin = {top: 40, right: 20, bottom: 60, left: 180},
-            width = +barSvg.attr("width") - margin.left - margin.right,
-            height = +barSvg.attr("height") - margin.top - margin.bottom;
+      const x = d3.scaleLinear().domain([0, d3.max(sorted, d => d.count)]).range([0, width]);
+      const y = d3.scaleBand().domain(sorted.map(d => d.domain)).range([0, height]).padding(0.1);
 
-      const chart = barSvg.append("g")
-                       .attr("transform", `translate(${margin.left},${margin.top})`);
-
-      const y = d3.scaleBand()
-                  .domain(processedData.map(d => d.domain))
-                  .range([0, height])
-                  .padding(0.15);
-
-      const x = d3.scaleLinear()
-                  .domain([0, d3.max(processedData, d => d.count)])
-                  .range([0, width]);
-
-      chart.append("g").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x));
       chart.append("g").call(d3.axisLeft(y));
-
-      barSvg.append("text")
-         .attr("x", +barSvg.attr("width") / 2)
-         .attr("y", 25)
-         .attr("text-anchor", "middle")
-         .attr("font-size", "18px")
-         .attr("fill", "#333")
-         .text("Top 10 Most Visited Domains");
+      chart.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
 
       chart.selectAll("rect")
-           .data(processedData)
-           .enter()
-           .append("rect")
-           .attr("y", d => y(d.domain))
-           .attr("x", 0)
-           .attr("height", y.bandwidth())
-           .attr("width", 0)
-           .attr("fill", "#69b3a2")
-           .transition()
-           .duration(1000)
-           .attr("width", d => x(d.count));
-
-      chart.selectAll("rect")
-           .on("mouseover", function(event, d) {
-              tooltip.transition().duration(200).style("opacity", 1);
-              tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
-                     .style("left", (event.pageX + 10) + "px")
-                     .style("top", (event.pageY - 28) + "px");
-              d3.select(this).attr("fill", "#4c837a");
-           })
-           .on("mouseout", function() {
-              tooltip.transition().duration(300).style("opacity", 0);
-              d3.select(this).attr("fill", "#69b3a2");
-           });
+        .data(sorted)
+        .enter()
+        .append("rect")
+        .attr("y", d => y(d.domain))
+        .attr("x", 0)
+        .attr("height", y.bandwidth())
+        .attr("width", d => x(d.count))
+        .attr("fill", "#69b3a2")
+        .on("mouseover", (event, d) => {
+          tooltip.transition().style("opacity", 1);
+          tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
+                 .style("left", `${event.pageX + 10}px`)
+                 .style("top", `${event.pageY - 28}px`);
+        })
+        .on("mouseout", () => tooltip.transition().style("opacity", 0));
     });
 
     // Donut Chart
-    const donutSvg = d3.select("#donutChart");
-    d3.csv("FinalAggregatedDataset.csv", d3.autoType).then(function(data) {
-      const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
-      const dropdown = d3.select("#dayDropdown");
-      
-      dropdown.selectAll("option")
-              .data(allDays)
-              .enter()
-              .append("option")
-              .text(d => d)
-              .attr("value", d => d);
+    d3.csv("FinalAggregatedDataset.csv", d3.autoType).then(data => {
+      const svg = d3.select("#donutChart"),
+            dropdown = d3.select("#dayDropdown");
 
-      drawDonut(data, allDays[0]);
+      const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
+      dropdown.selectAll("option").data(allDays)
+        .enter().append("option").text(d => d).attr("value", d => d);
 
       dropdown.on("change", function() {
-        const selectedDay = d3.select(this).property("value");
-        drawDonut(data, selectedDay);
+        drawDonut(this.value);
       });
 
-      function drawDonut(data, dayFilter) {
-        donutSvg.selectAll("*").remove();
+      drawDonut(allDays[0]);
 
+      function drawDonut(dayFilter) {
+        svg.selectAll("*").remove();
         const filtered = data.filter(d => d["Day of Week"] === dayFilter);
         const grouped = d3.rollup(filtered, v => v.length, d => d["Hour (bins)"]);
         const donutData = Array.from(grouped, ([label, value]) => ({ label, value }));
 
-        const width = +donutSvg.attr("width"),
-              height = +donutSvg.attr("height"),
+        const width = +svg.attr("width"),
+              height = +svg.attr("height"),
               radius = Math.min(width, height) / 2 - 50;
 
-        const chart = donutSvg.append("g")
-                              .attr("transform", `translate(${width / 2}, ${height / 2})`);
+        const chart = svg.append("g").attr("transform", `translate(${width / 2}, ${height / 2})`);
 
-        const color = d3.scaleOrdinal()
-                        .domain(donutData.map(d => d.label))
-                        .range(d3.schemeTableau10);
-
-        const pie = d3.pie().value(d => d.value).sort(null);
+        const color = d3.scaleOrdinal(d3.schemeTableau10);
+        const pie = d3.pie().value(d => d.value);
         const arc = d3.arc().innerRadius(radius * 0.5).outerRadius(radius);
 
-        donutSvg.append("text")
-         .attr("x", +donutSvg.attr("width") / 2)
-         .attr("y", 25)
-         .attr("text-anchor", "middle")
-         .attr("font-size", "18px")
-         .attr("fill", "#333")
-         .text("Internet Traffic by Keywords");
-
         chart.selectAll("path")
-             .data(pie(donutData))
-             .enter()
-             .append("path")
-             .attr("fill", d => color(d.data.label))
-             .attr("d", arc)
-             .on("mouseover", function(event, d) {
-                tooltip.transition().duration(200).style("opacity", 1);
-                tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
-                       .style("left", (event.pageX + 10) + "px")
-                       .style("top", (event.pageY - 28) + "px");
-             })
-             .on("mouseout", function() {
-                tooltip.transition().duration(300).style("opacity", 0);
-             });
+          .data(pie(donutData))
+          .enter()
+          .append("path")
+          .attr("d", arc)
+          .attr("fill", d => color(d.data.label))
+          .on("mouseover", (event, d) => {
+            tooltip.transition().style("opacity", 1);
+            tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
+                   .style("left", `${event.pageX + 10}px`)
+                   .style("top", `${event.pageY - 28}px`);
+          })
+          .on("mouseout", () => tooltip.transition().style("opacity", 0));
       }
     });
 
     // Line Chart
-    const lineSvg = d3.select("#lineChart");
-    const lineMargin = {top: 10, right: 30, bottom: 30, left: 60},
-          lineWidth = +lineSvg.attr("width") - lineMargin.left - lineMargin.right,
-          lineHeight = +
-::contentReference[oaicite:29]{index=29}
- 
-</script>
+    d3.csv("chart2.csv").then(data => {
+      const svg = d3.select("#lineChart"),
+            margin = {top: 10, right: 30, bottom: 30, left: 60},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
+
+      const parseDate = d3.timeParse("%m/%d/%Y");
+      const counts = d3.rollup(data, v => v.length, d => parseDate(d.date));
+      const lineData = Array.from(counts, ([date, value]) => ({ date, value })).sort((a, b) => a.date - b.date);
+
+      const x = d3.scaleTime().domain(d3.extent(lineData, d => d.date)).range([0, width]);
+      const y = d3.scaleLinear().domain([0, d3.max(lineData, d => d.value)]).range([height, 0]);
+
+      const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+      g.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+      g.append("g").call(d3.axisLeft(y));
+
+      g.append("path")
+        .datum(lineData)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 2)
+        .attr("d", d3.line().x(d => x(d.date)).y(d => y(d.value)));
+    });
+
+    // Bubble Chart
+    d3.csv("chart4.csv", d3.autoType).then(data => {
+      const svg = d3.select("#bubbleChart"),
+            margin = {top: 10, right: 30, bottom: 30, left: 60},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
+
+      const x = d3.scaleLinear().domain([0, d3.max(data, d => d.Frequency)]).range([0, width]);
+      const y = d3.scaleLinear().domain([0, d3.max(data, d => d.Frequency)]).range([height, 0]);
+      const r = d3.scaleSqrt().domain([0, d3.max(data, d => d.Frequency)]).range([2, 40]);
+
+      const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+      chart.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+      chart.append("g").call(d3.axisLeft(y));
+
+      chart.selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", d => x(d.Frequency))
+        .attr("cy", d => y(d.Frequency))
+        .attr("r", d => r(d.Frequency))
+        .style("fill", "#69b3a2")
+        .style("opacity", 0.7)
+        .attr("stroke", "black");
+    });
+  </script>
 </body>
 </html>
