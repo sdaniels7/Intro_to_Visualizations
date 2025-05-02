@@ -44,7 +44,7 @@
 </head>
 <body>
   <h1>Healthy Browsing</h1>
-  <p>Your browser history can tell stories about your mental health...</p>
+  <p>Your browser history can tell stories about your mental health. Explore the graphs below to see insights about your browsing history.</p>
 
   <div class="grid-container">
     <div class="chart-container">
@@ -75,7 +75,7 @@
     // ------------------- BAR CHART -------------------
     d3.csv("chart1.csv", d3.autoType).then(data => {
       const svg = d3.select("#barChart"),
-            margin = {top: 40, right: 20, bottom: 60, left: 180},
+            margin = {top: 40, right: 20, bottom: 60, left: 80},
             width = +svg.attr("width") - margin.left - margin.right,
             height = +svg.attr("height") - margin.top - margin.bottom;
 
@@ -125,54 +125,89 @@
         .text(d => d.count);
     });
 
-    // ------------------- RIDGE CHART -------------------
-    d3.csv("chart2.csv", d3.autoType).then(data => {
-      const svg = d3.select("#ridgeChart"),
-            margin = {top: 30, right: 30, bottom: 30, left: 100},
-            width = +svg.attr("width") - margin.left - margin.right,
-            height = +svg.attr("height") - margin.top - margin.bottom;
+    // -------------------  Grouped Bar Char--------- //
+    
+d3.csv("chart2.csv", d3.autoType).then(data => {
+  const svg = d3.select("#ridgeChart"),
+        margin = {top: 40, right: 20, bottom: 60, left: 60},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
 
-      const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-      const categories = data.columns.slice(1);
-      const x = d3.scaleLinear().domain([0, 100]).range([0, width]);
-      const y = d3.scaleLinear().domain([0, 0.4]).range([height, 0]);
-      const yName = d3.scaleBand().domain(categories).range([0, height]).paddingInner(1);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-      g.append("g").call(d3.axisLeft(yName));
-      g.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+  const subgroups = data.columns.slice(1); // ['PHQ9', 'GAD7', 'CAGE', 'SDOH']
+  const groups = data.map(d => d.assessment); // ['Monday', 'Tuesday', ...]
 
-      const kde = kernelDensityEstimator(kernelEpanechnikov(7), x.ticks(40));
-      const allDensity = categories.map(key => ({
-        key,
-        density: kde(data.map(d => +d[key]))
-      }));
+  const x0 = d3.scaleBand()
+               .domain(groups)
+               .range([0, width])
+               .padding(0.2);
 
-      g.selectAll("path")
-        .data(allDensity)
-        .enter()
-        .append("path")
-        .attr("transform", d => `translate(0,${yName(d.key) - height})`)
-        .datum(d => d.density)
-        .attr("fill", "#69b3a2")
-        .attr("stroke", "#000")
-        .attr("d", d3.line()
-          .curve(d3.curveBasis)
-          .x(d => x(d[0]))
-          .y(d => y(d[1])));
-    });
+  const x1 = d3.scaleBand()
+               .domain(subgroups)
+               .range([0, x0.bandwidth()])
+               .padding(0.05);
 
-    function kernelDensityEstimator(kernel, X) {
-      return function(V) {
-        return X.map(x => [x, d3.mean(V, v => kernel(x - v))]);
-      };
-    }
+  const y = d3.scaleLinear()
+              .domain([0, d3.max(data, d => d3.max(subgroups, key => d[key]))])
+              .nice()
+              .range([height, 0]);
 
-    function kernelEpanechnikov(k) {
-      return function(v) {
-        v /= k;
-        return Math.abs(v) <= 1 ? 0.75 * (1 - v * v) / k : 0;
-      };
-    }
+  const color = d3.scaleOrdinal()
+                  .domain(subgroups)
+                  .range(d3.schemeTableau10);
+
+  g.append("g")
+   .attr("transform", `translate(0,${height})`)
+   .call(d3.axisBottom(x0));
+
+  g.append("g")
+   .call(d3.axisLeft(y));
+
+  // Draw bars
+  g.append("g")
+    .selectAll("g")
+    .data(data)
+    .enter()
+    .append("g")
+      .attr("transform", d => `translate(${x0(d.assessment)},0)`)
+    .selectAll("rect")
+    .data(d => subgroups.map(key => ({ key: key, value: d[key] })))
+    .enter()
+    .append("rect")
+      .attr("x", d => x1(d.key))
+      .attr("y", d => y(d.value))
+      .attr("width", x1.bandwidth())
+      .attr("height", d => height - y(d.value))
+      .attr("fill", d => color(d.key))
+      .on("mouseover", function(event, d) {
+        tooltip.transition().style("opacity", 1);
+        tooltip.html(`${d.key}: ${d.value}`)
+               .style("left", (event.pageX + 10) + "px")
+               .style("top", (event.pageY - 28) + "px");
+      })
+      .on("mouseout", () => tooltip.transition().style("opacity", 0));
+
+  // Legend
+  const legend = svg.append("g")
+    .attr("transform", `translate(${width - 100},20)`);
+
+  subgroups.forEach((key, i) => {
+    const legendRow = legend.append("g")
+      .attr("transform", `translate(0,${i * 20})`);
+
+    legendRow.append("rect")
+      .attr("width", 10)
+      .attr("height", 10)
+      .attr("fill", color(key));
+
+    legendRow.append("text")
+      .attr("x", 15)
+      .attr("y", 10)
+      .text(key)
+      .style("font-size", "12px");
+  });
+});
 
     // ------------------- LINE CHART -------------------
     d3.csv("chart3.csv", d3.autoType).then(data => {
