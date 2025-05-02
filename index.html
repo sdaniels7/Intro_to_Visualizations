@@ -74,7 +74,7 @@
     // ------------------- BAR CHART -------------------
     d3.csv("chart1.csv", d3.autoType).then(data => {
       const svg = d3.select("#barChart"),
-            margin = {top: 40, right: 20, bottom: 60, left: 80},
+            margin = {top: 40, right: 20, bottom: 60, left: 180},
             width = +svg.attr("width") - margin.left - margin.right,
             height = +svg.attr("height") - margin.top - margin.bottom;
 
