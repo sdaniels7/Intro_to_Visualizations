@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
   <style>
-       body {
-        font-family: 'Segoe UI', sans-seri
-        margin: 40px;
-      }
-
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fafafa;
+      margin: 40px;
+    }
     .grid-container {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -83,7 +83,7 @@
             width = +svg.attr("width") - margin.left - margin.right,
             height = +svg.attr("height") - margin.top - margin.bottom;
 
-      const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+      const chart = svg.append("g").attr("transform", translate(${margin.left},${margin.top}));
 
       const counts = d3.rollup(data, v => v.length, d => d.domain);
       const sorted = Array.from(counts, ([domain, count]) => ({ domain, count }))
@@ -94,7 +94,7 @@
       const y = d3.scaleBand().domain(sorted.map(d => d.domain)).range([0, height]).padding(0.1);
 
       chart.append("g").call(d3.axisLeft(y));
-      chart.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+      chart.append("g").attr("transform", translate(0,${height})).call(d3.axisBottom(x));
 
       chart.selectAll("rect")
         .data(sorted)
@@ -113,7 +113,7 @@
       chart.selectAll("rect")
         .on("mouseover", (event, d) => {
           tooltip.transition().style("opacity", 1);
-          tooltip.html(`${d.domain}: ${d.count}`)
+          tooltip.html(${d.domain}: ${d.count})
                  .style("left", (event.pageX + 10) + "px")
                  .style("top", (event.pageY - 28) + "px");
         })
@@ -137,7 +137,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
         width = +svg.attr("width") - margin.left - margin.right,
         height = +svg.attr("height") - margin.top - margin.bottom;
 
-  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const g = svg.append("g").attr("transform", translate(${margin.left},${margin.top}));
 
   // Parse date
   const parseDate = d3.timeParse("%m/%d/%Y");
@@ -162,7 +162,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
                   .range(d3.schemeTableau10);
 
   g.append("g")
-    .attr("transform", `translate(0,${height})`)
+    .attr("transform", translate(0,${height}))
     .call(d3.axisBottom(x));
 
   g.append("g").call(d3.axisLeft(y));
@@ -195,7 +195,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
       .attr("fill", color(key))
       .on("mouseover", function(event, d) {
         tooltip.transition().style("opacity", 1);
-        tooltip.html(`<strong>${key}</strong><br>${d3.timeFormat("%B %d, %Y")(d.date)}<br>Score: ${d[key]}`)
+        tooltip.html(<strong>${key}</strong><br>${d3.timeFormat("%B %d, %Y")(d.date)}<br>Score: ${d[key]})
                .style("left", (event.pageX + 10) + "px")
                .style("top", (event.pageY - 28) + "px");
       })
@@ -206,11 +206,11 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
 
   // Legend
   const legend = svg.append("g")
-    .attr("transform", `translate(${width + margin.left + 10}, ${margin.top})`);
+    .attr("transform", translate(${width + margin.left + 10}, ${margin.top}));
 
   keys.forEach((key, i) => {
     const row = legend.append("g")
-      .attr("transform", `translate(0, ${i * 20})`);
+      .attr("transform", translate(0, ${i * 20}));
     row.append("rect")
       .attr("width", 10)
       .attr("height", 10)
@@ -231,7 +231,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
         width = +svg.attr("width") - margin.left - margin.right,
         height = +svg.attr("height") - margin.top - margin.bottom;
 
-  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const g = svg.append("g").attr("transform", translate(${margin.left},${margin.top}));
 
   const parseDate = d3.timeParse("%m/%d/%Y");
   data.forEach(d => {
@@ -258,7 +258,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
 
   // Axes
   g.append("g")
-   .attr("transform", `translate(0,${height})`)
+   .attr("transform", translate(0,${height}))
    .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")));
 
   g.append("g")
@@ -274,7 +274,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
       .x(d => x(d.date))
       .y(d => y(d.value)));
 
-  // Optional: dots + tooltip
+  // Dots & tooltip
   g.selectAll("circle")
     .data(lineData)
     .enter()
@@ -285,7 +285,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
     .attr("fill", "steelblue")
     .on("mouseover", function(event, d) {
       tooltip.transition().style("opacity", 1);
-      tooltip.html(`${d3.timeFormat("%b %d, %Y")(d.date)}<br>Visits: ${d.value}`)
+      tooltip.html(${d3.timeFormat("%b %d, %Y")(d.date)}<br>Visits: ${d.value})
              .style("left", (event.pageX + 10) + "px")
              .style("top", (event.pageY - 28) + "px");
     })
@@ -329,7 +329,7 @@ d3.csv("chart4.csv", d3.autoType).then(data => {
     .style("opacity", 0.8)
     .on("mouseover", function(event, d) {
       tooltip.transition().style("opacity", 1);
-      tooltip.html(`<strong>${d.Keyword}</strong><br>Assessment: ${d.Assessment}<br>Frequency: ${d.Frequency}`)
+      tooltip.html(<strong>${d.Keyword}</strong><br>Assessment: ${d.Assessment}<br>Frequency: ${d.Frequency})
              .style("left", (event.pageX + 10) + "px")
              .style("top", (event.pageY - 28) + "px");
     })
@@ -346,12 +346,12 @@ d3.csv("chart4.csv", d3.autoType).then(data => {
 
   // Legend
   const legend = svg.append("g")
-    .attr("transform", `translate(${width - 150}, 20)`);
+    .attr("transform", translate(${width - 150}, 20));
 
   const assessments = [...new Set(data.map(d => d.Assessment))];
   assessments.forEach((assessment, i) => {
     const row = legend.append("g")
-      .attr("transform", `translate(0, ${i * 20})`);
+      .attr("transform", translate(0, ${i * 20}));
 
     row.append("rect")
       .attr("width", 12)
