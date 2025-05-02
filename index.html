@@ -140,16 +140,8 @@
     const donutSvg = d3.select("#donutChart");
     d3.csv("FinalAggregatedDataset.csv", d3.autoType).then(function(data) {
       const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
-      const dropdown = d3.select("#dayDropdown");
-
-      donutSvg.append("text")
-         .attr("x", +donutSvg.attr("width") / 2)
-         .attr("y", 25)
-         .attr("text-anchor", "middle")
-         .attr("font-size", "18px")
-         .attr("fill", "#333")
-         .text("Internet Traffic by Keywords");
-
+      const dropdown = d3.select("#dayDropdown
+                                 
       dropdown.selectAll("option")
               .data(allDays)
               .enter()
@@ -184,6 +176,14 @@
 
         const pie = d3.pie().value(d => d.value).sort(null);
         const arc = d3.arc().innerRadius(radius * 0.5).outerRadius(radius);
+ 
+        donutSvg.append("text")
+         .attr("x", +donutSvg.attr("width") / 2)
+         .attr("y", 25)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "18px")
+         .attr("fill", "#333")
+         .text("Internet Traffic by Keywords");
 
         chart.selectAll("path")
              .data(pie(donutData))
@@ -212,6 +212,14 @@
     const chartGroup = lineSvg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    lineSvg.append("text")
+         .attr("x", +lineSvg.attr("width") / 2)
+         .attr("y", 25)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "18px")
+         .attr("fill", "#333")
+         .text("Website History Over Time");
+    
     d3.csv("chart2.csv", function(d) {
       return {date: d3.timeParse("%m/%d/%Y")(d.date), value: +d.value 
              "All Websites",value:+d.value};
