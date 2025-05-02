@@ -245,101 +245,74 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
         .attr("d", d3.line().x(d => x(d.date)).y(d => y(d.value)));
     });
 
-    // ------------------- BUBBLE CHART -------------------
-
-// ------------------- BUBBLE CHART COLORED BY ASSESSMENT -------------------
+    // ------------------- BUBBLE CHART -----------------
 d3.csv("chart4.csv", d3.autoType).then(data => {
   const svg = d3.select("#bubbleChart"),
-        margin = {top: 10, right: 30, bottom: 60, left: 80},
-        width = +svg.attr("width") - margin.left - margin.right,
-        height = +svg.attr("height") - margin.top - margin.bottom;
-
-  const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
-  // Unique values
-  const keywords = data.map(d => d.Keyword);
-  const assessments = [...new Set(data.map(d => d.Assessment))];
-
-  // Scales
-  const x = d3.scalePoint()
-              .domain(keywords)
-              .range([0, width])
-              .padding(0.5);
-
-  const y = d3.scalePoint()
-              .domain(assessments)
-              .range([height, 0])
-              .padding(0.5);
-
-  const r = d3.scaleSqrt()
-              .domain([0, d3.max(data, d => d.Frequency)])
-              .range([5, 40]);
+        width = +svg.attr("width"),
+        height = +svg.attr("height");
 
   const color = d3.scaleOrdinal()
-                  .domain(assessments)
-                  .range(d3.schemeTableau10); // You can switch to schemeSet2, schemeCategory10, etc.
+    .domain([...new Set(data.map(d => d.Assessment))])
+    .range(d3.schemeTableau10);
 
-  // Axes
-  chart.append("g")
-    .attr("transform", `translate(0,${height})`)
-    .call(d3.axisBottom(x).tickSize(0))
-    .selectAll("text")
-    .attr("transform", "rotate(-45)")
-    .style("text-anchor", "end");
+  const radius = d3.scaleSqrt()
+    .domain([0, d3.max(data, d => d.Frequency)])
+    .range([10, 50]);
 
-  chart.append("g")
-    .call(d3.axisLeft(y).tickSize(0));
+  const nodes = data.map(d => ({
+    ...d,
+    radius: radius(d.Frequency),
+    x: Math.random() * width,
+    y: Math.random() * height
+  }));
 
-  // Axis Labels
-  svg.append("text")
-    .attr("x", width / 2 + margin.left)
-    .attr("y", height + margin.top + 50)
-    .attr("text-anchor", "middle")
-    .style("font-size", "14px")
-    .text("Keyword");
+  const simulation = d3.forceSimulation(nodes)
+    .force("x", d3.forceX(width / 2).strength(0.05))
+    .force("y", d3.forceY(height / 2).strength(0.05))
+    .force("collision", d3.forceCollide(d => d.radius + 2))
+    .on("tick", ticked);
 
-  svg.append("text")
-    .attr("x", -height / 2)
-    .attr("y", 15)
-    .attr("transform", "rotate(-90)")
-    .attr("text-anchor", "middle")
-    .style("font-size", "14px")
-    .text("Assessment");
-
-  // Bubbles
-  chart.selectAll("circle")
-    .data(data)
+  const bubbles = svg.selectAll("circle")
+    .data(nodes)
     .enter()
     .append("circle")
-    .attr("cx", d => x(d.Keyword))
-    .attr("cy", d => y(d.Assessment))
-    .attr("r", d => r(d.Frequency))
-    .style("fill", d => color(d.Assessment))
-    .style("opacity", 0.8)
+    .attr("r", 0) // start small for animation
+    .attr("fill", d => color(d.Assessment))
     .attr("stroke", "black")
+    .style("opacity", 0.8)
     .on("mouseover", function(event, d) {
       tooltip.transition().style("opacity", 1);
       tooltip.html(`<strong>${d.Keyword}</strong><br>Assessment: ${d.Assessment}<br>Frequency: ${d.Frequency}`)
              .style("left", (event.pageX + 10) + "px")
              .style("top", (event.pageY - 28) + "px");
     })
-    .on("mouseout", () => tooltip.transition().style("opacity", 0));
+    .on("mouseout", () => tooltip.transition().style("opacity", 0))
+    .transition()
+    .duration(1000)
+    .attr("r", d => d.radius);
+
+  function ticked() {
+    svg.selectAll("circle")
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y);
+  }
 
   // Legend
   const legend = svg.append("g")
-    .attr("transform", `translate(${width + margin.left + 10}, ${margin.top})`);
+    .attr("transform", `translate(${width - 150}, 20)`);
 
+  const assessments = [...new Set(data.map(d => d.Assessment))];
   assessments.forEach((assessment, i) => {
     const row = legend.append("g")
       .attr("transform", `translate(0, ${i * 20})`);
 
     row.append("rect")
-      .attr("width", 10)
-      .attr("height", 10)
+      .attr("width", 12)
+      .attr("height", 12)
       .attr("fill", color(assessment));
 
     row.append("text")
-      .attr("x", 15)
+      .attr("x", 18)
       .attr("y", 10)
       .text(assessment)
       .style("font-size", "12px");
