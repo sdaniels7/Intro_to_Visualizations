@@ -31,7 +31,6 @@ There are four charts:
  -Depression keyword count
  -CAGEAID keyword count
  -Hour accessed
- ---------------------------------------------------------------------------
 
 ### Installation and setup instructions
  You can see the GitHub page final dashboard using this link:
