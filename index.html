@@ -186,8 +186,28 @@
         chart.selectAll("path")
              .data(pie(donutData))
              .enter()
-             .append("path
-      ::contentReference[oaicite:50]{index=50}
-        )};
-  </script>
+             .append("path")
+             .attr("fill", d => color(d.data.label))
+             .attr("d", arc)
+             .on("mouseover", function(event, d) {
+                tooltip.transition().duration(200).style("opacity", 1);
+                tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.value} visits`)
+                       .style("left", (event.pageX + 10) + "px")
+                       .style("top", (event.pageY - 28) + "px");
+             })
+             .on("mouseout", function() {
+                tooltip.transition().duration(300).style("opacity", 0);
+             });
+      }
+    });
+
+    // Line Chart
+    const lineSvg = d3.select("#lineChart");
+    const lineMargin = {top: 10, right: 30, bottom: 30, left: 60},
+          lineWidth = +lineSvg.attr("width") - lineMargin.left - lineMargin.right,
+          lineHeight = +
+::contentReference[oaicite:29]{index=29}
  
+</script>
+</body>
+</html>
