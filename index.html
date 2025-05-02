@@ -72,156 +72,110 @@
   <script>
     const tooltip = d3.select(".tooltip");
 
-   // Bar Chart with animation, tooltip, and labels
-d3.csv("chart1.csv", d3.autoType).then(data => {
-  const svg = d3.select("#barChart"),
-        margin = {top: 40, right: 20, bottom: 60, left: 180},
-        width = +svg.attr("width") - margin.left - margin.right,
-        height = +svg.attr("height") - margin.top - margin.bottom;
+    // ------------------- BAR CHART -------------------
+    d3.csv("chart1.csv", d3.autoType).then(data => {
+      const svg = d3.select("#barChart"),
+            margin = {top: 40, right: 20, bottom: 60, left: 180},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
 
-  const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+      const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-  const counts = d3.rollup(data, v => v.length, d => d.domain);
-  const sorted = Array.from(counts, ([domain, count]) => ({ domain, count }))
-    .sort((a, b) => d3.descending(a.count, b.count))
-    .slice(0, 10);
+      const counts = d3.rollup(data, v => v.length, d => d.domain);
+      const sorted = Array.from(counts, ([domain, count]) => ({ domain, count }))
+        .sort((a, b) => d3.descending(a.count, b.count))
+        .slice(0, 10);
 
-  const x = d3.scaleLinear().domain([0, d3.max(sorted, d => d.count)]).range([0, width]);
-  const y = d3.scaleBand().domain(sorted.map(d => d.domain)).range([0, height]).padding(0.1);
+      const x = d3.scaleLinear().domain([0, d3.max(sorted, d => d.count)]).range([0, width]);
+      const y = d3.scaleBand().domain(sorted.map(d => d.domain)).range([0, height]).padding(0.1);
 
-  chart.append("g").call(d3.axisLeft(y));
-  chart.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+      chart.append("g").call(d3.axisLeft(y));
+      chart.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
 
-  svg.append("text")
-     .attr("x", +svg.attr("width") / 2)
-     .attr("y", 25)
-     .attr("text-anchor", "middle")
-     .attr("font-size", "18px")
-     .attr("fill", "#333")
-     .text("Top 10 Most Visited Domains");
+      chart.selectAll("rect")
+        .data(sorted)
+        .enter()
+        .append("rect")
+        .attr("y", d => y(d.domain))
+        .attr("x", 0)
+        .attr("height", y.bandwidth())
+        .attr("width", 0)
+        .attr("fill", "#69b3a2")
+        .transition()
+        .duration(1000)
+        .attr("width", d => x(d.count));
 
-  // Bars with animation
-  const bars = chart.selectAll("rect")
-    .data(sorted)
-    .enter()
-    .append("rect")
-    .attr("y", d => y(d.domain))
-    .attr("x", 0)
-    .attr("height", y.bandwidth())
-    .attr("width", 0) // Start from 0 for animation
-    .attr("fill", "#69b3a2")
-    .on("mouseover", function(event, d) {
-      tooltip.transition().duration(200).style("opacity", 1);
-      tooltip.html(`<strong>${d.domain}</strong><br>${d.count} visits`)
-             .style("left", (event.pageX + 10) + "px")
-             .style("top", (event.pageY - 28) + "px");
-      d3.select(this).attr("fill", "#4c837a");
-    })
-    .on("mouseout", function() {
-      tooltip.transition().duration(300).style("opacity", 0);
-      d3.select(this).attr("fill", "#69b3a2");
+      // Tooltip and labels
+      chart.selectAll("rect")
+        .on("mouseover", (event, d) => {
+          tooltip.transition().style("opacity", 1);
+          tooltip.html(`${d.domain}: ${d.count}`)
+                 .style("left", (event.pageX + 10) + "px")
+                 .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => tooltip.transition().style("opacity", 0));
+
+      chart.selectAll(".label")
+        .data(sorted)
+        .enter()
+        .append("text")
+        .attr("x", d => x(d.count) + 5)
+        .attr("y", d => y(d.domain) + y.bandwidth() / 2)
+        .attr("dy", "0.35em")
+        .text(d => d.count);
     });
 
-  // Animate bar width
-  bars.transition()
-    .duration(1000)
-    .attr("width", d => x(d.count));
+    // ------------------- RIDGE CHART -------------------
+    d3.csv("chart2.csv", d3.autoType).then(data => {
+      const svg = d3.select("#ridgeChart"),
+            margin = {top: 30, right: 30, bottom: 30, left: 100},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
 
-  // Add labels at the end of each bar
-  chart.selectAll(".bar-label")
-    .data(sorted)
-    .enter()
-    .append("text")
-    .attr("class", "bar-label")
-    .attr("x", d => x(d.count) + 5)
-    .attr("y", d => y(d.domain) + y.bandwidth() / 2)
-    .attr("dy", "0.35em")
-    .text(d => d.count)
-    .style("font-size", "12px")
-    .style("fill", "#333");
-});
+      const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+      const categories = data.columns.slice(1);
+      const x = d3.scaleLinear().domain([0, 100]).range([0, width]);
+      const y = d3.scaleLinear().domain([0, 0.4]).range([height, 0]);
+      const yName = d3.scaleBand().domain(categories).range([0, height]).paddingInner(1);
 
-    // Ridge Chart
-          // append the svg object to the body of the page
-          var svg = d3.select("#ridgeChart")
-            .append("svg")
-              .attr("width", width + margin.left + margin.right)
-              .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-              .attr("transform",
-                    "translate(" + margin.left + "," + margin.top + ")");
-          
-          //read data
-        d3.csv("chart2.csv", d3.autoType).function(data){
-          // Get the different categories and count them
-            var categories = data.columns
-            var n = categories.length
-          
-            // Add X axis
-            var x = d3.scaleLinear()
-              .domain([-10, 140])
-              .range([ 0, width ]);
-            svg.append("g")
-              .attr("transform", "translate(0," + height + ")")
-              .call(d3.axisBottom(x));
-          
-            // Create a Y scale for densities
-            var y = d3.scaleLinear()
-              .domain([0, 0.4])
-              .range([ height, 0]);
-          
-            // Create the Y axis for names
-            var yName = d3.scaleBand()
-              .domain(categories)
-              .range([0, height])
-              .paddingInner(1)
-            svg.append("g")
-              .call(d3.axisLeft(yName));
-          
-            // Compute kernel density estimation for each column:
-            var kde = kernelDensityEstimator(kernelEpanechnikov(7), x.ticks(40)) // increase this 40 for more accurate density.
-            var allDensity = []
-            for (i = 0; i < n; i++) {
-                key = categories[i]
-                density = kde( data.map(function(d){  return d[key]; }) )
-                allDensity.push({key: key, density: density})
-            }
-          
-            // Add areas
-            svg.selectAll("areas")
-              .data(allDensity)
-              .enter()
-              .append("path")
-                .attr("transform", function(d){return("translate(0," + (yName(d.key)-height) +")" )})
-                .datum(function(d){return(d.density)})
-                .attr("fill", "#69b3a2")
-                .attr("stroke", "#000")
-                .attr("stroke-width", 1)
-                .attr("d",  d3.line()
-                    .curve(d3.curveBasis)
-                    .x(function(d) { return x(d[0]); })
-                    .y(function(d) { return y(d[1]); })
-                )
-          
-          })
-          
-          // This is what I need to compute kernel density estimation
-          function kernelDensityEstimator(kernel, X) {
-            return function(V) {
-              return X.map(function(x) {
-                return [x, d3.mean(V, function(v) { return kernel(x - v); })];
-              });
-            };
-          }
-          function kernelEpanechnikov(k) {
-            return function(v) {
-              return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0;
-            };
-          }
+      g.append("g").call(d3.axisLeft(yName));
+      g.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
 
-    
-    // Line Chart
-    d3.csv("chart3.csv").then(data => {
+      const kde = kernelDensityEstimator(kernelEpanechnikov(7), x.ticks(40));
+      const allDensity = categories.map(key => ({
+        key,
+        density: kde(data.map(d => +d[key]))
+      }));
+
+      g.selectAll("path")
+        .data(allDensity)
+        .enter()
+        .append("path")
+        .attr("transform", d => `translate(0,${yName(d.key) - height})`)
+        .datum(d => d.density)
+        .attr("fill", "#69b3a2")
+        .attr("stroke", "#000")
+        .attr("d", d3.line()
+          .curve(d3.curveBasis)
+          .x(d => x(d[0]))
+          .y(d => y(d[1])));
+    });
+
+    function kernelDensityEstimator(kernel, X) {
+      return function(V) {
+        return X.map(x => [x, d3.mean(V, v => kernel(x - v))]);
+      };
+    }
+
+    function kernelEpanechnikov(k) {
+      return function(v) {
+        v /= k;
+        return Math.abs(v) <= 1 ? 0.75 * (1 - v * v) / k : 0;
+      };
+    }
+
+    // ------------------- LINE CHART -------------------
+    d3.csv("chart3.csv", d3.autoType).then(data => {
       const svg = d3.select("#lineChart"),
             margin = {top: 10, right: 30, bottom: 30, left: 60},
             width = +svg.attr("width") - margin.left - margin.right,
@@ -246,7 +200,7 @@ d3.csv("chart1.csv", d3.autoType).then(data => {
         .attr("d", d3.line().x(d => x(d.date)).y(d => y(d.value)));
     });
 
-    // BubbleChart
+    // ------------------- BUBBLE CHART -------------------
     d3.csv("chart4.csv", d3.autoType).then(data => {
       const svg = d3.select("#bubbleChart"),
             margin = {top: 10, right: 30, bottom: 30, left: 60},
@@ -260,15 +214,7 @@ d3.csv("chart1.csv", d3.autoType).then(data => {
       const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
       chart.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
       chart.append("g").call(d3.axisLeft(y));
-      
-      svg.append("text")
-     .attr("x", +svg.attr("width") / 2)
-     .attr("y", 25)
-     .attr("text-anchor", "middle")
-     .attr("font-size", "18px")
-     .attr("fill", "#333")
-     .text("Words used in Websites");
-      
+
       chart.selectAll("circle")
         .data(data)
         .enter()
