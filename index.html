@@ -44,7 +44,6 @@
 </head>
 <body>
   <h1>Healthy Browsing</h1>
-  <h2>Welcome, Samantha!</h2>
   <p>Your browser history can tell stories about your mental health. Explore the graphs below to see insights about your browsing history.</p>
 
   <div class="grid-container">
@@ -274,7 +273,7 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
       .x(d => x(d.date))
       .y(d => y(d.value)));
 
-  // Dots & tooltip
+  // Optional: dots + tooltip
   g.selectAll("circle")
     .data(lineData)
     .enter()
