@@ -35,145 +35,107 @@
       pointer-events: none;
       font-size: 12px;
     }
-    select {
-      font-size: 14px;
-      padding: 6px;
-      margin-bottom: 10px;
-    }
   </style>
 </head>
 <body>
   <h1>Healthy Browsing</h1>
-  <p>Your browser history can tell stories about your mental health. Explore the graphs below to see insights about your browsing history.</p>
-
+  <div class="tooltip" style="opacity: 0;"></div>
   <div class="grid-container">
     <div class="chart-container">
-      <h3>Most Commonly Viewed Websites</h3>
-      <h4>Here are the 10 most commonly browsed websites for this time period. Does this surprise you?</h4>
+      <h3>Top 10 Most Visited Domains</h3>
       <svg id="barChart" width="600" height="400"></svg>
     </div>
     <div class="chart-container">
       <h3>Keywords by Clinical Assessments over Time</h3>
-      <h4>Do you notice any changes in keyword frequency? Do you know why?</h4>
       <svg id="ridgeChart" width="600" height="400"></svg>
-      <div class="tooltip" style="opacity: 0;"></div>
     </div>
     <div class="chart-container">
       <h3>Website Visits Over Time</h3>
-      <h4>Here is how many websites you've been browsing. Changes can happen during periods of stress, intense planning, and depends on the person.</h4>
       <svg id="lineChart" width="600" height="400"></svg>
     </div>
     <div class="chart-container">
       <h3>Bubble Chart</h3>
-      <h4>The larger the bubble, the more frequently the keyword appeared in your websites. Mouseover to see the keyword and more information.</h4>
       <svg id="bubbleChart" width="600" height="400"></svg>
     </div>
   </div>
 
-  <div class="tooltip" style="opacity: 0;"></div>
+<script>
+const tooltip = d3.select(".tooltip");
 
-  <script>
-    const tooltip = d3.select(".tooltip");
+// ------------------- BAR CHART -------------------
+d3.csv("chart1.csv", d3.autoType).then(data => {
+  const svg = d3.select("#barChart"),
+        margin = {top: 40, right: 20, bottom: 60, left: 180},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
 
-    // ------------------- BAR CHART -------------------
-    d3.csv("chart1.csv", d3.autoType).then(data => {
-      const svg = d3.select("#barChart"),
-            margin = {top: 40, right: 20, bottom: 60, left: 180},
-            width = +svg.attr("width") - margin.left - margin.right,
-            height = +svg.attr("height") - margin.top - margin.bottom;
+  const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-      const chart = svg.append("g").attr("transform", translate(${margin.left},${margin.top}));
+  const counts = d3.rollup(data, v => v.length, d => d.domain);
+  const sorted = Array.from(counts, ([domain, count]) => ({ domain, count }))
+    .sort((a, b) => d3.descending(a.count, b.count))
+    .slice(0, 10);
 
-      const counts = d3.rollup(data, v => v.length, d => d.domain);
-      const sorted = Array.from(counts, ([domain, count]) => ({ domain, count }))
-        .sort((a, b) => d3.descending(a.count, b.count))
-        .slice(0, 10);
+  const x = d3.scaleLinear().domain([0, d3.max(sorted, d => d.count)]).range([0, width]);
+  const y = d3.scaleBand().domain(sorted.map(d => d.domain)).range([0, height]).padding(0.1);
 
-      const x = d3.scaleLinear().domain([0, d3.max(sorted, d => d.count)]).range([0, width]);
-      const y = d3.scaleBand().domain(sorted.map(d => d.domain)).range([0, height]).padding(0.1);
+  chart.append("g").call(d3.axisLeft(y));
+  chart.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
 
-      chart.append("g").call(d3.axisLeft(y));
-      chart.append("g").attr("transform", translate(0,${height})).call(d3.axisBottom(x));
+  chart.selectAll("rect")
+    .data(sorted)
+    .enter()
+    .append("rect")
+    .attr("y", d => y(d.domain))
+    .attr("x", 0)
+    .attr("height", y.bandwidth())
+    .attr("width", 0)
+    .attr("fill", "#69b3a2")
+    .transition()
+    .duration(1000)
+    .attr("width", d => x(d.count));
 
-      chart.selectAll("rect")
-        .data(sorted)
-        .enter()
-        .append("rect")
-        .attr("y", d => y(d.domain))
-        .attr("x", 0)
-        .attr("height", y.bandwidth())
-        .attr("width", 0)
-        .attr("fill", "#69b3a2")
-        .transition()
-        .duration(1000)
-        .attr("width", d => x(d.count));
+  chart.selectAll("rect")
+    .on("mouseover", (event, d) => {
+      tooltip.transition().style("opacity", 1);
+      tooltip.html(`${d.domain}: ${d.count}`)
+             .style("left", (event.pageX + 10) + "px")
+             .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", () => tooltip.transition().style("opacity", 0));
 
-      // Tooltip and labels
-      chart.selectAll("rect")
-        .on("mouseover", (event, d) => {
-          tooltip.transition().style("opacity", 1);
-          tooltip.html(${d.domain}: ${d.count})
-                 .style("left", (event.pageX + 10) + "px")
-                 .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", () => tooltip.transition().style("opacity", 0));
+  chart.selectAll(".label")
+    .data(sorted)
+    .enter()
+    .append("text")
+    .attr("x", d => x(d.count) + 5)
+    .attr("y", d => y(d.domain) + y.bandwidth() / 2)
+    .attr("dy", "0.35em")
+    .text(d => d.count);
+});
 
-      chart.selectAll(".label")
-        .data(sorted)
-        .enter()
-        .append("text")
-        .attr("x", d => x(d.count) + 5)
-        .attr("y", d => y(d.domain) + y.bandwidth() / 2)
-        .attr("dy", "0.35em")
-        .text(d => d.count);
-    });
-
-//------------------------Multi-line Chart with Tooltips-------------------------//
-  
+// ------------------- RIDGE / MULTI-LINE CHART -------------------
 d3.csv("chart2.csv", d3.autoType).then(data => {
   const svg = d3.select("#ridgeChart"),
         margin = {top: 40, right: 100, bottom: 40, left: 60},
         width = +svg.attr("width") - margin.left - margin.right,
         height = +svg.attr("height") - margin.top - margin.bottom;
 
-  const g = svg.append("g").attr("transform", translate(${margin.left},${margin.top}));
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // Parse date
   const parseDate = d3.timeParse("%m/%d/%Y");
-  data.forEach(d => {
-    d.date = parseDate(d.date);
-  });
+  data.forEach(d => { d.date = parseDate(d.date); });
 
-  // Metrics to plot
   const keys = ["PHQ-9", "GAD-7", "SDoH", "CAGE-AID"];
+  const x = d3.scaleTime().domain(d3.extent(data, d => d.date)).range([0, width]);
+  const y = d3.scaleLinear().domain([0, d3.max(data, d => d3.max(keys, key => +d[key]))]).nice().range([height, 0]);
+  const color = d3.scaleOrdinal().domain(keys).range(d3.schemeTableau10);
 
-  const x = d3.scaleTime()
-              .domain(d3.extent(data, d => d.date))
-              .range([0, width]);
-
-  const y = d3.scaleLinear()
-              .domain([0, d3.max(data, d => d3.max(keys, key => +d[key]))])
-              .nice()
-              .range([height, 0]);
-
-  const color = d3.scaleOrdinal()
-                  .domain(keys)
-                  .range(d3.schemeTableau10);
-
-  g.append("g")
-    .attr("transform", translate(0,${height}))
-    .call(d3.axisBottom(x));
-
+  g.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
   g.append("g").call(d3.axisLeft(y));
 
-  // Tooltip container
-  const tooltip = d3.select(".tooltip");
-
-  // Draw lines and points
   keys.forEach(key => {
-    const line = d3.line()
-      .x(d => x(d.date))
-      .y(d => y(d[key]));
+    const line = d3.line().x(d => x(d.date)).y(d => y(d[key]));
 
     g.append("path")
       .datum(data)
@@ -182,98 +144,60 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
       .attr("stroke-width", 2)
       .attr("d", line);
 
-    // Add data points
-    g.selectAll(".dot-" + key)
+    g.selectAll(`.dot-${key}`)
       .data(data)
       .enter()
       .append("circle")
-      .attr("class", "dot-" + key)
       .attr("cx", d => x(d.date))
       .attr("cy", d => y(d[key]))
       .attr("r", 4)
       .attr("fill", color(key))
       .on("mouseover", function(event, d) {
         tooltip.transition().style("opacity", 1);
-        tooltip.html(<strong>${key}</strong><br>${d3.timeFormat("%B %d, %Y")(d.date)}<br>Score: ${d[key]})
+        tooltip.html(`<strong>${key}</strong><br>${d3.timeFormat("%B %d, %Y")(d.date)}<br>Score: ${d[key]}`)
                .style("left", (event.pageX + 10) + "px")
                .style("top", (event.pageY - 28) + "px");
       })
-      .on("mouseout", function() {
-        tooltip.transition().style("opacity", 0);
-      });
+      .on("mouseout", () => tooltip.transition().style("opacity", 0));
   });
 
-  // Legend
-  const legend = svg.append("g")
-    .attr("transform", translate(${width + margin.left + 10}, ${margin.top}));
-
+  const legend = svg.append("g").attr("transform", `translate(${width + margin.left + 10}, ${margin.top})`);
   keys.forEach((key, i) => {
-    const row = legend.append("g")
-      .attr("transform", translate(0, ${i * 20}));
-    row.append("rect")
-      .attr("width", 10)
-      .attr("height", 10)
-      .attr("fill", color(key));
-    row.append("text")
-      .attr("x", 15)
-      .attr("y", 10)
-      .text(key)
-      .style("font-size", "12px");
+    const row = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
+    row.append("rect").attr("width", 10).attr("height", 10).attr("fill", color(key));
+    row.append("text").attr("x", 15).attr("y", 10).text(key).style("font-size", "12px");
   });
 });
 
-
-    // ------------------- FIXED LINE CHART -------------------
+// ------------------- LINE CHART -------------------
 d3.csv("chart2.csv", d3.autoType).then(data => {
   const svg = d3.select("#lineChart"),
         margin = {top: 10, right: 30, bottom: 30, left: 60},
         width = +svg.attr("width") - margin.left - margin.right,
         height = +svg.attr("height") - margin.top - margin.bottom;
 
-  const g = svg.append("g").attr("transform", translate(${margin.left},${margin.top}));
-
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
   const parseDate = d3.timeParse("%m/%d/%Y");
-  data.forEach(d => {
-    d.date = parseDate(d.date);
-  });
 
-  // Extract and prepare data for the line: [{date, value}]
+  data.forEach(d => { d.date = parseDate(d.date); });
+
   const lineData = data
     .filter(d => d["All Websites"] != null)
-    .map(d => ({
-      date: d.date,
-      value: +d["All Websites"]
-    }));
+    .map(d => ({ date: d.date, value: +d["All Websites"] }));
 
-  // Scales
-  const x = d3.scaleTime()
-              .domain(d3.extent(lineData, d => d.date))
-              .range([0, width]);
+  const x = d3.scaleTime().domain(d3.extent(lineData, d => d.date)).range([0, width]);
+  const y = d3.scaleLinear().domain([0, d3.max(lineData, d => d.value)]).nice().range([height, 0]);
 
-  const y = d3.scaleLinear()
-              .domain([0, d3.max(lineData, d => d.value)])
-              .nice()
-              .range([height, 0]);
+  g.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")));
+  g.append("g").call(d3.axisLeft(y));
 
-  // Axes
-  g.append("g")
-   .attr("transform", translate(0,${height}))
-   .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")));
-
-  g.append("g")
-   .call(d3.axisLeft(y));
-
-  // Line path
   g.append("path")
     .datum(lineData)
     .attr("fill", "none")
     .attr("stroke", "steelblue")
     .attr("stroke-width", 2)
-    .attr("d", d3.line()
-      .x(d => x(d.date))
-      .y(d => y(d.value)));
+    .attr("d", d3.line().x(d => x(d.date)).y(d => y(d.value)));
 
-  // Optional: dots + tooltip
   g.selectAll("circle")
     .data(lineData)
     .enter()
@@ -284,90 +208,12 @@ d3.csv("chart2.csv", d3.autoType).then(data => {
     .attr("fill", "steelblue")
     .on("mouseover", function(event, d) {
       tooltip.transition().style("opacity", 1);
-      tooltip.html(${d3.timeFormat("%b %d, %Y")(d.date)}<br>Visits: ${d.value})
+      tooltip.html(`${d3.timeFormat("%b %d, %Y")(d.date)}<br>Visits: ${d.value}`)
              .style("left", (event.pageX + 10) + "px")
              .style("top", (event.pageY - 28) + "px");
     })
     .on("mouseout", () => tooltip.transition().style("opacity", 0));
 });
-
-    // ------------------- BUBBLE CHART -----------------
-d3.csv("chart4.csv", d3.autoType).then(data => {
-  const svg = d3.select("#bubbleChart"),
-        width = +svg.attr("width"),
-        height = +svg.attr("height");
-
-  const color = d3.scaleOrdinal()
-    .domain([...new Set(data.map(d => d.Assessment))])
-    .range(d3.schemeTableau10);
-
-  const radius = d3.scaleSqrt()
-    .domain([0, d3.max(data, d => d.Frequency)])
-    .range([10, 50]);
-
-  const nodes = data.map(d => ({
-    ...d,
-    radius: radius(d.Frequency),
-    x: Math.random() * width,
-    y: Math.random() * height
-  }));
-
-  const simulation = d3.forceSimulation(nodes)
-    .force("x", d3.forceX(width / 2).strength(0.05))
-    .force("y", d3.forceY(height / 2).strength(0.05))
-    .force("collision", d3.forceCollide(d => d.radius + 2))
-    .on("tick", ticked);
-
-  const bubbles = svg.selectAll("circle")
-    .data(nodes)
-    .enter()
-    .append("circle")
-    .attr("r", 0) // start small for animation
-    .attr("fill", d => color(d.Assessment))
-    .attr("stroke", "black")
-    .style("opacity", 0.8)
-    .on("mouseover", function(event, d) {
-      tooltip.transition().style("opacity", 1);
-      tooltip.html(<strong>${d.Keyword}</strong><br>Assessment: ${d.Assessment}<br>Frequency: ${d.Frequency})
-             .style("left", (event.pageX + 10) + "px")
-             .style("top", (event.pageY - 28) + "px");
-    })
-    .on("mouseout", () => tooltip.transition().style("opacity", 0))
-    .transition()
-    .duration(1000)
-    .attr("r", d => d.radius);
-
-  function ticked() {
-    svg.selectAll("circle")
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y);
-  }
-
-  // Legend
-  const legend = svg.append("g")
-    .attr("transform", translate(${width - 150}, 20));
-
-  const assessments = [...new Set(data.map(d => d.Assessment))];
-  assessments.forEach((assessment, i) => {
-    const row = legend.append("g")
-      .attr("transform", translate(0, ${i * 20}));
-
-    row.append("rect")
-      .attr("width", 12)
-      .attr("height", 12)
-      .attr("fill", color(assessment));
-
-    row.append("text")
-      .attr("x", 18)
-      .attr("y", 10)
-      .text(assessment)
-      .style("font-size", "12px");
-  });
-});
-
 </script>
-
-  
-  </script>
 </body>
 </html>
