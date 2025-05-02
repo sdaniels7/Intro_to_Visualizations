@@ -35,9 +35,6 @@
       pointer-events: none;
       font-size: 12px;
     }
-    .legend {
-      font-size: 12px;
-    }
     select {
       font-size: 14px;
       padding: 6px;
@@ -142,7 +139,6 @@
       const allDays = Array.from(new Set(data.map(d => d["Day of Week"]))).sort();
       const dropdown = d3.select("#dayDropdown");
 
-                                 
       dropdown.selectAll("option")
               .data(allDays)
               .enter()
@@ -177,7 +173,7 @@
 
         const pie = d3.pie().value(d => d.value).sort(null);
         const arc = d3.arc().innerRadius(radius * 0.5).outerRadius(radius);
- 
+
         donutSvg.append("text")
          .attr("x", +donutSvg.attr("width") / 2)
          .attr("y", 25)
@@ -204,61 +200,58 @@
       }
     });
 
-    <script>
-  const lineSvg = d3.select("#chart2");
-  const margin = {top: 10, right: 30, bottom: 30, left: 60},
-        width = +lineSvg.attr("width") - margin.left - margin.right,
-        height = +lineSvg.attr("height") - margin.top - margin.bottom;
+    // Line Chart
+    const lineSvg = d3.select("#chart2");
+    const margin = {top: 10, right: 30, bottom: 30, left: 60},
+          width = +lineSvg.attr("width") - margin.left - margin.right,
+          height = +lineSvg.attr("height") - margin.top - margin.bottom;
 
-  const chartGroup = lineSvg.append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const chartGroup = lineSvg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  lineSvg.append("text")
-       .attr("x", +lineSvg.attr("width") / 2)
-       .attr("y", 25)
-       .attr("text-anchor", "middle")
-       .attr("font-size", "18px")
-       .attr("fill", "#333")
-       .text("Website Visits Over Time");
+    lineSvg.append("text")
+         .attr("x", +lineSvg.attr("width") / 2)
+         .attr("y", 25)
+         .attr("text-anchor", "middle")
+         .attr("font-size", "18px")
+         .attr("fill", "#333")
+         .text("Website Visits Over Time");
 
-  d3.csv("chart2.csv").then(function(rawData) {
-    const parseDate = d3.timeParse("%m/%d/%Y");
+    d3.csv("chart2.csv").then(function(rawData) {
+      const parseDate = d3.timeParse("%m/%d/%Y");
 
-    // Group by date and count number of websites
-    const dateCounts = d3.rollup(
-      rawData,
-      v => v.length,
-      d => parseDate(d.date)
-    );
+      // Count website visits per date
+      const dateCounts = d3.rollup(
+        rawData,
+        v => v.length,
+        d => parseDate(d.date)
+      );
 
-    const data = Array.from(dateCounts, ([date, value]) => ({ date, value }));
+      const data = Array.from(dateCounts, ([date, value]) => ({ date, value }));
 
-    // Set up scales
-    const x = d3.scaleTime()
-                .domain(d3.extent(data, d => d.date))
-                .range([0, width]);
+      const x = d3.scaleTime()
+                  .domain(d3.extent(data, d => d.date))
+                  .range([0, width]);
 
-    const y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.value)])
-                .range([height, 0]);
+      const y = d3.scaleLinear()
+                  .domain([0, d3.max(data, d => d.value)])
+                  .range([height, 0]);
 
-    // Axes
-    chartGroup.append("g")
-              .attr("transform", `translate(0,${height})`)
-              .call(d3.axisBottom(x));
+      chartGroup.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x));
 
-    chartGroup.append("g")
-              .call(d3.axisLeft(y));
+      chartGroup.append("g")
+                .call(d3.axisLeft(y));
 
-    // Line path
-    chartGroup.append("path")
-              .datum(data)
-              .attr("fill", "none")
-              .attr("stroke", "steelblue")
-              .attr("stroke-width", 2)
-              .attr("d", d3.line()
-                .x(d => x(d.date))
-                .y(d => y(d.value)));
+      chartGroup.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 2)
+                .attr("d", d3.line()
+                  .x(d => x(d.date))
+                  .y(d => y(d.value)));
     });
   </script>
 </body>
